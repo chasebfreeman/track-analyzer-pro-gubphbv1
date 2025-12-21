@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Image,
   Platform,
+  Alert,
 } from 'react-native';
 import { colors } from '@/styles/commonStyles';
 import { StorageService } from '@/utils/storage';
@@ -59,6 +60,62 @@ export default function BrowseScreen() {
     }));
 
     setGroupedReadings(groupedArray);
+  };
+
+  const formatDateWithDay = (dateString: string): string => {
+    try {
+      const [month, day, year] = dateString.split('/');
+      const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      const dayName = dayNames[date.getDay()];
+      return `${dateString} - ${dayName}`;
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return dateString;
+    }
+  };
+
+  const handleDeleteReading = (reading: TrackReading) => {
+    if (Platform.OS === 'web') {
+      const confirmed = window.confirm(
+        `Are you sure you want to delete the reading from ${reading.date} at ${reading.time}?`
+      );
+      if (confirmed) {
+        deleteReading(reading.id);
+      }
+    } else {
+      Alert.alert(
+        'Delete Reading',
+        `Are you sure you want to delete the reading from ${reading.date} at ${reading.time}?`,
+        [
+          {
+            text: 'Cancel',
+            style: 'cancel',
+          },
+          {
+            text: 'Delete',
+            style: 'destructive',
+            onPress: () => deleteReading(reading.id),
+          },
+        ]
+      );
+    }
+  };
+
+  const deleteReading = async (readingId: string) => {
+    try {
+      await StorageService.deleteReading(readingId);
+      if (selectedTrack) {
+        await loadReadings(selectedTrack.id);
+      }
+    } catch (error) {
+      console.error('Error deleting reading:', error);
+      if (Platform.OS === 'web') {
+        window.alert('Failed to delete reading. Please try again.');
+      } else {
+        Alert.alert('Error', 'Failed to delete reading. Please try again.');
+      }
+    }
   };
 
   const renderLaneData = (lane: any, title: string) => (
@@ -195,7 +252,7 @@ export default function BrowseScreen() {
               <React.Fragment key={dayIndex}>
                 <View style={styles.daySection}>
                   <Text style={styles.dayHeader}>
-                    {dayGroup.date}
+                    {formatDateWithDay(dayGroup.date)}
                   </Text>
                   {dayGroup.readings.map((reading, readingIndex) => (
                     <React.Fragment key={readingIndex}>
@@ -219,14 +276,27 @@ export default function BrowseScreen() {
                               {reading.time}
                             </Text>
                           </View>
-                          <IconSymbol
-                            ios_icon_name="chevron.down"
-                            android_material_icon_name={
-                              expandedReading === reading.id ? 'expand_less' : 'expand_more'
-                            }
-                            size={20}
-                            color={colors.textSecondary}
-                          />
+                          <View style={styles.readingHeaderRight}>
+                            <TouchableOpacity
+                              style={styles.deleteButton}
+                              onPress={() => handleDeleteReading(reading)}
+                            >
+                              <IconSymbol
+                                ios_icon_name="trash"
+                                android_material_icon_name="delete"
+                                size={20}
+                                color="#ff3b30"
+                              />
+                            </TouchableOpacity>
+                            <IconSymbol
+                              ios_icon_name="chevron.down"
+                              android_material_icon_name={
+                                expandedReading === reading.id ? 'expand_less' : 'expand_more'
+                              }
+                              size={20}
+                              color={colors.textSecondary}
+                            />
+                          </View>
                         </TouchableOpacity>
 
                         {expandedReading === reading.id && (
@@ -363,10 +433,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
+  readingHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
   readingTime: {
     fontSize: 16,
     fontWeight: '600',
     color: colors.text,
+  },
+  deleteButton: {
+    padding: 4,
   },
   readingDetails: {
     marginTop: 16,
