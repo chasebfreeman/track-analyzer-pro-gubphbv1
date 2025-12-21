@@ -158,53 +158,58 @@ export default function FloatingTabBar({
   return (
     <View style={styles.outerContainer} pointerEvents="box-none">
       <SafeAreaView style={styles.safeArea} edges={['bottom']} pointerEvents="box-none">
-        <View style={[
-          styles.container,
-          {
-            width: containerWidth,
-            marginBottom: bottomMargin ?? 20
-          }
-        ]}>
-          <BlurView
-            intensity={80}
-            style={[dynamicStyles.blurContainer, { borderRadius }]}
-          >
-            <View style={dynamicStyles.background} pointerEvents="none" />
-            <Animated.View style={[dynamicStyles.indicator, indicatorStyle]} pointerEvents="none" />
-            <View style={styles.tabsContainer}>
-              {tabs.map((tab, index) => {
-                const isActive = activeTabIndex === index;
+        <View 
+          style={[
+            styles.container,
+            {
+              width: containerWidth,
+              marginBottom: bottomMargin ?? 20
+            }
+          ]}
+          pointerEvents="box-none"
+        >
+          <View style={styles.blurWrapper}>
+            <BlurView
+              intensity={80}
+              style={[dynamicStyles.blurContainer, { borderRadius }]}
+            >
+              <View style={dynamicStyles.background} pointerEvents="none" />
+              <Animated.View style={[dynamicStyles.indicator, indicatorStyle]} pointerEvents="none" />
+              <View style={styles.tabsContainer} pointerEvents="box-none">
+                {tabs.map((tab, index) => {
+                  const isActive = activeTabIndex === index;
 
-                return (
-                  <React.Fragment key={index}>
-                    <TouchableOpacity
-                      style={styles.tab}
-                      onPress={() => handleTabPress(tab.route)}
-                      activeOpacity={0.7}
-                    >
-                      <View style={styles.tabContent} pointerEvents="none">
-                        <IconSymbol
-                          android_material_icon_name={tab.icon}
-                          ios_icon_name={tab.icon}
-                          size={24}
-                          color={isActive ? theme.colors.primary : (theme.dark ? '#98989D' : '#000000')}
-                        />
-                        <Text
-                          style={[
-                            styles.tabLabel,
-                            { color: theme.dark ? '#98989D' : '#8E8E93' },
-                            isActive && { color: theme.colors.primary, fontWeight: '600' },
-                          ]}
-                        >
-                          {tab.label}
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
-                  </React.Fragment>
-                );
-              })}
-            </View>
-          </BlurView>
+                  return (
+                    <React.Fragment key={index}>
+                      <TouchableOpacity
+                        style={styles.tab}
+                        onPress={() => handleTabPress(tab.route)}
+                        activeOpacity={0.7}
+                      >
+                        <View style={styles.tabContent} pointerEvents="none">
+                          <IconSymbol
+                            android_material_icon_name={tab.icon}
+                            ios_icon_name={tab.icon}
+                            size={24}
+                            color={isActive ? theme.colors.primary : (theme.dark ? '#98989D' : '#000000')}
+                          />
+                          <Text
+                            style={[
+                              styles.tabLabel,
+                              { color: theme.dark ? '#98989D' : '#8E8E93' },
+                              isActive && { color: theme.colors.primary, fontWeight: '600' },
+                            ]}
+                          >
+                            {tab.label}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    </React.Fragment>
+                  );
+                })}
+              </View>
+            </BlurView>
+          </View>
         </View>
       </SafeAreaView>
     </View>
@@ -218,6 +223,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 1000,
+    elevation: 1000,
   },
   safeArea: {
     alignItems: 'center',
@@ -225,6 +231,11 @@ const styles = StyleSheet.create({
   container: {
     marginHorizontal: 20,
     alignSelf: 'center',
+  },
+  blurWrapper: {
+    // This wrapper ensures proper hit testing
+    zIndex: 1000,
+    elevation: 1000,
   },
   blurContainer: {
     overflow: 'hidden',
@@ -251,6 +262,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 8,
+    zIndex: 10,
   },
   tabContent: {
     alignItems: 'center',
