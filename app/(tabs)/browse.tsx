@@ -6,27 +6,35 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Image,
   Platform,
-  Alert,
 } from 'react-native';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { useThemeColors } from '@/styles/commonStyles';
 import { StorageService } from '@/utils/storage';
 import { Track, TrackReading, DayReadings } from '@/types/TrackData';
 import { IconSymbol } from '@/components/IconSymbol';
 
 export default function BrowseScreen() {
+  const router = useRouter();
   const colors = useThemeColors();
   const [tracks, setTracks] = useState<Track[]>([]);
   const [selectedTrack, setSelectedTrack] = useState<Track | null>(null);
   const [readings, setReadings] = useState<TrackReading[]>([]);
   const [groupedReadings, setGroupedReadings] = useState<DayReadings[]>([]);
-  const [expandedReading, setExpandedReading] = useState<string | null>(null);
   const [showTrackPicker, setShowTrackPicker] = useState(false);
 
   useEffect(() => {
     loadTracks();
   }, []);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log('Browse screen focused, reloading data');
+      if (selectedTrack) {
+        loadReadings(selectedTrack.id);
+      }
+    }, [selectedTrack])
+  );
 
   useEffect(() => {
     if (selectedTrack) {
@@ -76,112 +84,12 @@ export default function BrowseScreen() {
     }
   };
 
-  const handleDeleteReading = (reading: TrackReading) => {
-    if (Platform.OS === 'web') {
-      const confirmed = window.confirm(
-        `Are you sure you want to delete the reading from ${reading.date} at ${reading.time}?`
-      );
-      if (confirmed) {
-        deleteReading(reading.id);
-      }
-    } else {
-      Alert.alert(
-        'Delete Reading',
-        `Are you sure you want to delete the reading from ${reading.date} at ${reading.time}?`,
-        [
-          {
-            text: 'Cancel',
-            style: 'cancel',
-          },
-          {
-            text: 'Delete',
-            style: 'destructive',
-            onPress: () => deleteReading(reading.id),
-          },
-        ]
-      );
-    }
-  };
-
-  const deleteReading = async (readingId: string) => {
-    try {
-      await StorageService.deleteReading(readingId);
-      if (selectedTrack) {
-        await loadReadings(selectedTrack.id);
-      }
-    } catch (error) {
-      console.error('Error deleting reading:', error);
-      if (Platform.OS === 'web') {
-        window.alert('Failed to delete reading. Please try again.');
-      } else {
-        Alert.alert('Error', 'Failed to delete reading. Please try again.');
-      }
-    }
-  };
-
-  const renderLaneData = (lane: any, title: string) => {
-    const styles = getStyles(colors);
-    
-    return (
-      <View style={styles.laneData}>
-        <Text style={styles.laneDataTitle}>{title}</Text>
-        <View style={styles.dataGrid}>
-          <View style={styles.dataRow}>
-            <Text style={styles.dataLabel}>Track Temp:</Text>
-            <Text style={styles.dataValue}>
-              {lane.trackTemp || 'N/A'}°F
-            </Text>
-          </View>
-          <View style={styles.dataRow}>
-            <Text style={styles.dataLabel}>UV Index:</Text>
-            <Text style={styles.dataValue}>
-              {lane.uvIndex || 'N/A'}
-            </Text>
-          </View>
-          <View style={styles.dataRow}>
-            <Text style={styles.dataLabel}>Keg SL:</Text>
-            <Text style={styles.dataValue}>
-              {lane.kegSL || 'N/A'}
-            </Text>
-          </View>
-          <View style={styles.dataRow}>
-            <Text style={styles.dataLabel}>Keg Out:</Text>
-            <Text style={styles.dataValue}>
-              {lane.kegOut || 'N/A'}
-            </Text>
-          </View>
-          <View style={styles.dataRow}>
-            <Text style={styles.dataLabel}>Grippo SL:</Text>
-            <Text style={styles.dataValue}>
-              {lane.grippoSL || 'N/A'}
-            </Text>
-          </View>
-          <View style={styles.dataRow}>
-            <Text style={styles.dataLabel}>Grippo Out:</Text>
-            <Text style={styles.dataValue}>
-              {lane.grippoOut || 'N/A'}
-            </Text>
-          </View>
-          <View style={styles.dataRow}>
-            <Text style={styles.dataLabel}>Shine:</Text>
-            <Text style={styles.dataValue}>
-              {lane.shine || 'N/A'}
-            </Text>
-          </View>
-          {lane.notes && (
-            <View style={styles.notesRow}>
-              <Text style={styles.dataLabel}>Notes:</Text>
-              <Text style={styles.notesValue}>
-                {lane.notes}
-              </Text>
-            </View>
-          )}
-          {lane.imageUri && (
-            <Image source={{ uri: lane.imageUri }} style={styles.laneImage} />
-          )}
-        </View>
-      </View>
-    );
+  const handleReadingPress = (reading: TrackReading) => {
+    console.log('Reading pressed:', reading.id);
+    router.push({
+      pathname: '/(tabs)/reading-detail',
+      params: { readingId: reading.id },
+    });
   };
 
   const styles = getStyles(colors);
@@ -263,15 +171,12 @@ export default function BrowseScreen() {
                   </Text>
                   {dayGroup.readings.map((reading, readingIndex) => (
                     <React.Fragment key={readingIndex}>
-                      <View style={styles.readingCard}>
-                        <TouchableOpacity
-                          style={styles.readingHeader}
-                          onPress={() =>
-                            setExpandedReading(
-                              expandedReading === reading.id ? null : reading.id
-                            )
-                          }
-                        >
+                      <TouchableOpacity
+                        style={styles.readingCard}
+                        onPress={() => handleReadingPress(reading)}
+                        activeOpacity={0.7}
+                      >
+                        <View style={styles.readingHeader}>
                           <View style={styles.readingHeaderLeft}>
                             <IconSymbol
                               ios_icon_name="clock"
@@ -283,36 +188,28 @@ export default function BrowseScreen() {
                               {reading.time}
                             </Text>
                           </View>
-                          <View style={styles.readingHeaderRight}>
-                            <TouchableOpacity
-                              style={styles.deleteButton}
-                              onPress={() => handleDeleteReading(reading)}
-                            >
-                              <IconSymbol
-                                ios_icon_name="trash"
-                                android_material_icon_name="delete"
-                                size={20}
-                                color="#ff3b30"
-                              />
-                            </TouchableOpacity>
-                            <IconSymbol
-                              ios_icon_name="chevron.down"
-                              android_material_icon_name={
-                                expandedReading === reading.id ? 'expand_less' : 'expand_more'
-                              }
-                              size={20}
-                              color={colors.textSecondary}
-                            />
+                          <IconSymbol
+                            ios_icon_name="chevron.right"
+                            android_material_icon_name="chevron_right"
+                            size={20}
+                            color={colors.textSecondary}
+                          />
+                        </View>
+                        <View style={styles.readingPreview}>
+                          <View style={styles.previewRow}>
+                            <Text style={styles.previewLabel}>Left Lane Temp:</Text>
+                            <Text style={styles.previewValue}>
+                              {reading.leftLane.trackTemp || 'N/A'}°F
+                            </Text>
                           </View>
-                        </TouchableOpacity>
-
-                        {expandedReading === reading.id && (
-                          <View style={styles.readingDetails}>
-                            {renderLaneData(reading.leftLane, 'Left Lane')}
-                            {renderLaneData(reading.rightLane, 'Right Lane')}
+                          <View style={styles.previewRow}>
+                            <Text style={styles.previewLabel}>Right Lane Temp:</Text>
+                            <Text style={styles.previewValue}>
+                              {reading.rightLane.trackTemp || 'N/A'}°F
+                            </Text>
                           </View>
-                        )}
-                      </View>
+                        </View>
+                      </TouchableOpacity>
                     </React.Fragment>
                   ))}
                 </View>
@@ -435,73 +332,37 @@ function getStyles(colors: ReturnType<typeof useThemeColors>) {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
+      marginBottom: 12,
     },
     readingHeaderLeft: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 8,
     },
-    readingHeaderRight: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 12,
-    },
     readingTime: {
       fontSize: 16,
       fontWeight: '600',
       color: colors.text,
     },
-    deleteButton: {
-      padding: 4,
-    },
-    readingDetails: {
-      marginTop: 16,
-      gap: 16,
-    },
-    laneData: {
+    readingPreview: {
+      gap: 6,
+      paddingTop: 12,
       borderTopWidth: 1,
       borderTopColor: colors.border,
-      paddingTop: 12,
     },
-    laneDataTitle: {
-      fontSize: 16,
-      fontWeight: '600',
-      marginBottom: 12,
-      color: colors.primary,
-    },
-    dataGrid: {
-      gap: 8,
-    },
-    dataRow: {
+    previewRow: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
     },
-    dataLabel: {
+    previewLabel: {
       fontSize: 14,
-      fontWeight: '500',
       color: colors.textSecondary,
     },
-    dataValue: {
+    previewValue: {
       fontSize: 14,
       fontWeight: '600',
       color: colors.text,
-    },
-    notesRow: {
-      marginTop: 8,
-    },
-    notesValue: {
-      fontSize: 14,
-      marginTop: 4,
-      lineHeight: 20,
-      color: colors.text,
-    },
-    laneImage: {
-      width: '100%',
-      height: 200,
-      borderRadius: 8,
-      marginTop: 12,
-      resizeMode: 'cover',
     },
   });
 }

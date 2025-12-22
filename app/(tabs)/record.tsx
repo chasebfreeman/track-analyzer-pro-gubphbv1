@@ -63,7 +63,7 @@ export default function RecordScreen() {
       loadTracks().then(() => {
         console.log('Tracks reloaded on focus');
       });
-    }, [params.trackId])
+    }, [])
   );
 
   useEffect(() => {
