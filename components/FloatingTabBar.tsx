@@ -8,142 +8,122 @@ import {
   Platform,
   Dimensions,
 } from 'react-native';
-import { useRouter, usePathname } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { IconSymbol } from '@/components/IconSymbol';
 import { BlurView } from 'expo-blur';
 import { useTheme } from '@react-navigation/native';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { Href } from 'expo-router';
+import { useTabTrigger } from 'expo-router/ui';
 
 const { width: screenWidth } = Dimensions.get('window');
 
-export interface TabBarItem {
+interface TabConfig {
   name: string;
-  route: Href;
-  icon: keyof typeof MaterialIcons.glyphMap;
+  icon: string;
   label: string;
 }
 
+const TAB_CONFIGS: TabConfig[] = [
+  { name: 'tracks', icon: 'map', label: 'Tracks' },
+  { name: 'record', icon: 'add_circle', label: 'Record' },
+  { name: 'browse', icon: 'search', label: 'Browse' },
+];
+
 interface FloatingTabBarProps {
-  tabs: TabBarItem[];
-  containerWidth?: number;
-  borderRadius?: number;
-  bottomMargin?: number;
+  children: React.ReactElement[];
 }
 
-export default function FloatingTabBar({
-  tabs,
-  containerWidth = screenWidth / 2.5,
-  borderRadius = 35,
-  bottomMargin
-}: FloatingTabBarProps) {
-  const router = useRouter();
-  const pathname = usePathname();
+function TabButton({ name, icon, label }: TabConfig) {
+  const theme = useTheme();
+  const trigger = useTabTrigger({ name });
+
+  return (
+    <TouchableOpacity
+      style={[
+        styles.tab,
+        trigger.isFocused && {
+          backgroundColor: theme.dark
+            ? 'rgba(255, 255, 255, 0.08)'
+            : 'rgba(0, 0, 0, 0.04)',
+          borderRadius: 27,
+        }
+      ]}
+      onPress={trigger.onPress}
+      onLongPress={trigger.onLongPress}
+      activeOpacity={0.6}
+      hitSlop={{ top: 10, bottom: 10, left: 5, right: 5 }}
+    >
+      <IconSymbol
+        android_material_icon_name={icon}
+        ios_icon_name={icon}
+        size={24}
+        color={trigger.isFocused ? theme.colors.primary : (theme.dark ? '#98989D' : '#000000')}
+      />
+      <Text
+        style={[
+          styles.tabLabel,
+          { color: theme.dark ? '#98989D' : '#8E8E93' },
+          trigger.isFocused && { color: theme.colors.primary, fontWeight: '600' },
+        ]}
+      >
+        {label}
+      </Text>
+    </TouchableOpacity>
+  );
+}
+
+export default function FloatingTabBar({ children }: FloatingTabBarProps) {
   const theme = useTheme();
 
-  // Simplified active tab detection
-  const activeTabIndex = React.useMemo(() => {
-    const index = tabs.findIndex(tab => {
-      const routeStr = tab.route as string;
-      return pathname === routeStr || pathname.includes(tab.name);
-    });
-    console.log('FloatingTabBar: Active tab index:', index, 'for pathname:', pathname);
-    return index >= 0 ? index : 0;
-  }, [pathname, tabs]);
-
-  const handleTabPress = React.useCallback((route: Href, tabName: string) => {
-    console.log('FloatingTabBar: Tab pressed:', tabName, 'Route:', route);
-    try {
-      router.push(route);
-    } catch (error) {
-      console.error('FloatingTabBar: Navigation error:', error);
-    }
-  }, [router]);
-
-  // Dynamic styles based on theme
   const blurTint = theme.dark ? 'dark' : 'light';
   const backgroundColor = theme.dark
     ? 'rgba(28, 28, 30, 0.95)'
     : 'rgba(255, 255, 255, 0.95)';
 
   return (
-    <View 
-      style={styles.outerContainer}
-      pointerEvents="box-none"
-    >
-      <SafeAreaView 
-        style={styles.safeArea} 
-        edges={['bottom']}
+    <>
+      {children}
+      <View 
+        style={styles.outerContainer}
         pointerEvents="box-none"
       >
-        <View 
-          style={[
-            styles.container,
-            {
-              width: containerWidth,
-              marginBottom: bottomMargin ?? 20
-            }
-          ]}
-          pointerEvents="auto"
+        <SafeAreaView 
+          style={styles.safeArea} 
+          edges={['bottom']}
+          pointerEvents="box-none"
         >
-          <BlurView
-            intensity={80}
-            tint={blurTint}
+          <View 
             style={[
-              styles.blurContainer,
-              { 
-                borderRadius,
-                backgroundColor,
-                borderWidth: 1.2,
-                borderColor: theme.dark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+              styles.container,
+              {
+                width: screenWidth / 2.5,
+                marginBottom: 20
               }
             ]}
+            pointerEvents="auto"
           >
-            <View style={styles.tabsContainer}>
-              {tabs.map((tab, index) => {
-                const isActive = activeTabIndex === index;
-
-                return (
-                  <React.Fragment key={index}>
-                    <TouchableOpacity
-                      style={[
-                        styles.tab,
-                        isActive && {
-                          backgroundColor: theme.dark
-                            ? 'rgba(255, 255, 255, 0.08)'
-                            : 'rgba(0, 0, 0, 0.04)',
-                          borderRadius: 27,
-                        }
-                      ]}
-                      onPress={() => handleTabPress(tab.route, tab.name)}
-                      activeOpacity={0.6}
-                      hitSlop={{ top: 10, bottom: 10, left: 5, right: 5 }}
-                    >
-                      <IconSymbol
-                        android_material_icon_name={tab.icon}
-                        ios_icon_name={tab.icon}
-                        size={24}
-                        color={isActive ? theme.colors.primary : (theme.dark ? '#98989D' : '#000000')}
-                      />
-                      <Text
-                        style={[
-                          styles.tabLabel,
-                          { color: theme.dark ? '#98989D' : '#8E8E93' },
-                          isActive && { color: theme.colors.primary, fontWeight: '600' },
-                        ]}
-                      >
-                        {tab.label}
-                      </Text>
-                    </TouchableOpacity>
-                  </React.Fragment>
-                );
-              })}
-            </View>
-          </BlurView>
-        </View>
-      </SafeAreaView>
-    </View>
+            <BlurView
+              intensity={80}
+              tint={blurTint}
+              style={[
+                styles.blurContainer,
+                { 
+                  borderRadius: 35,
+                  backgroundColor,
+                  borderWidth: 1.2,
+                  borderColor: theme.dark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+                }
+              ]}
+            >
+              <View style={styles.tabsContainer}>
+                {TAB_CONFIGS.map((config, index) => (
+                  <TabButton key={index} {...config} />
+                ))}
+              </View>
+            </BlurView>
+          </View>
+        </SafeAreaView>
+      </View>
+    </>
   );
 }
 
