@@ -13,7 +13,7 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useThemeColors } from '@/styles/commonStyles';
 import { StorageService } from '@/utils/storage';
-import { TrackReading } from '@/types/TrackData';
+import { TrackReading, Track } from '@/types/TrackData';
 import { IconSymbol } from '@/components/IconSymbol';
 
 export default function ReadingDetailScreen() {
@@ -21,6 +21,7 @@ export default function ReadingDetailScreen() {
   const router = useRouter();
   const colors = useThemeColors();
   const [reading, setReading] = React.useState<TrackReading | null>(null);
+  const [track, setTrack] = React.useState<Track | null>(null);
 
   React.useEffect(() => {
     loadReading();
@@ -32,6 +33,13 @@ export default function ReadingDetailScreen() {
       const foundReading = readings.find((r) => r.id === params.readingId);
       if (foundReading) {
         setReading(foundReading);
+        
+        // Load the track information
+        const tracks = await StorageService.getTracks();
+        const foundTrack = tracks.find((t) => t.id === foundReading.trackId);
+        if (foundTrack) {
+          setTrack(foundTrack);
+        }
       }
     } catch (error) {
       console.error('Error loading reading:', error);
@@ -208,7 +216,7 @@ export default function ReadingDetailScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.headerInfo}>
-          <Text style={styles.title}>Reading Details</Text>
+          <Text style={styles.title}>{track ? track.name : 'Reading Details'}</Text>
           <View style={styles.dateTimeContainer}>
             <View style={styles.dateTimeRow}>
               <IconSymbol
