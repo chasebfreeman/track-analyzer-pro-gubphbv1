@@ -17,7 +17,8 @@ import { IconSymbol } from '@/components/IconSymbol';
 export default function BrowseScreen() {
   const router = useRouter();
   const colors = useThemeColors();
-  const [tracks, setTracks] = useState<Track[]>([]);
+  const [allTracks, setAllTracks] = useState<Track[]>([]);
+  const [filteredTracks, setFilteredTracks] = useState<Track[]>([]);
   const [selectedTrack, setSelectedTrack] = useState<Track | null>(null);
   const [readings, setReadings] = useState<TrackReading[]>([]);
   const [groupedReadings, setGroupedReadings] = useState<DayReadings[]>([]);
@@ -28,15 +29,16 @@ export default function BrowseScreen() {
 
   useEffect(() => {
     loadTracks();
+    loadAllAvailableYears();
   }, []);
 
   useFocusEffect(
     React.useCallback(() => {
       console.log('Browse screen focused, reloading data');
       loadTracks();
+      loadAllAvailableYears();
       if (selectedTrack) {
         loadReadings(selectedTrack.id, selectedYear);
-        loadAvailableYearsForTrack(selectedTrack.id);
       }
     }, [selectedTrack, selectedYear])
   );
@@ -44,23 +46,48 @@ export default function BrowseScreen() {
   useEffect(() => {
     if (selectedTrack) {
       loadReadings(selectedTrack.id, selectedYear);
-      loadAvailableYearsForTrack(selectedTrack.id);
     }
   }, [selectedTrack, selectedYear]);
+
+  // Filter tracks when year changes
+  useEffect(() => {
+    filterTracksByYear();
+  }, [selectedYear, allTracks]);
 
   const loadTracks = async () => {
     console.log('Loading tracks in BrowseScreen...');
     const loadedTracks = await StorageService.getTracks();
     console.log('Loaded tracks:', loadedTracks.length);
-    setTracks(loadedTracks.sort((a, b) => a.name.localeCompare(b.name)));
-    if (loadedTracks.length > 0 && !selectedTrack) {
-      setSelectedTrack(loadedTracks[0]);
+    setAllTracks(loadedTracks.sort((a, b) => a.name.localeCompare(b.name)));
+  };
+
+  const filterTracksByYear = async () => {
+    console.log('Filtering tracks for year:', selectedYear);
+    const tracksWithReadings: Track[] = [];
+    
+    for (const track of allTracks) {
+      const trackReadings = await StorageService.getReadingsByTrackAndYear(track.id, selectedYear);
+      if (trackReadings.length > 0) {
+        tracksWithReadings.push(track);
+      }
+    }
+    
+    console.log('Tracks with readings for', selectedYear, ':', tracksWithReadings.length);
+    setFilteredTracks(tracksWithReadings);
+    
+    // If the currently selected track is not in the filtered list, reset selection
+    if (selectedTrack && !tracksWithReadings.find(t => t.id === selectedTrack.id)) {
+      console.log('Selected track not in filtered list, resetting selection');
+      setSelectedTrack(tracksWithReadings.length > 0 ? tracksWithReadings[0] : null);
+    } else if (!selectedTrack && tracksWithReadings.length > 0) {
+      // If no track is selected and we have tracks, select the first one
+      setSelectedTrack(tracksWithReadings[0]);
     }
   };
 
-  const loadAvailableYearsForTrack = async (trackId: string) => {
+  const loadAllAvailableYears = async () => {
     try {
-      const years = await StorageService.getAvailableYearsForTrack(trackId);
+      const years = await StorageService.getAvailableYears();
       const currentYear = new Date().getFullYear();
       
       // Create a comprehensive list of years from 2024 to current year + 1
@@ -78,10 +105,10 @@ export default function BrowseScreen() {
       // Convert to sorted array (newest first)
       const sortedYears = Array.from(allYears).sort((a, b) => b - a);
       
-      console.log('Available years for track:', sortedYears);
+      console.log('Available years:', sortedYears);
       setAvailableYears(sortedYears);
     } catch (error) {
-      console.error('Error loading available years for track:', error);
+      console.error('Error loading available years:', error);
       // Fallback to basic years if there's an error
       const currentYear = new Date().getFullYear();
       setAvailableYears([currentYear + 1, currentYear, 2025, 2024].filter((v, i, a) => a.indexOf(v) === i).sort((a, b) => b - a));
@@ -207,7 +234,7 @@ export default function BrowseScreen() {
             onPress={() => setShowTrackPicker(!showTrackPicker)}
           >
             <Text style={styles.trackButtonText}>
-              {selectedTrack ? selectedTrack.name : 'Choose a track...'}
+              {selectedTrack ? selectedTrack.name : filteredTracks.length === 0 ? 'No tracks with data for this year' : 'Choose a track...'}
             </Text>
             <IconSymbol
               ios_icon_name="chevron.down"
@@ -219,29 +246,36 @@ export default function BrowseScreen() {
 
           {showTrackPicker && (
             <View style={styles.trackList}>
-              {tracks.map((track, index) => (
-                <React.Fragment key={index}>
-                  <TouchableOpacity
-                    style={[
-                      styles.trackOption,
-                      selectedTrack?.id === track.id && styles.trackOptionSelected,
-                    ]}
-                    onPress={() => {
-                      setSelectedTrack(track);
-                      setShowTrackPicker(false);
-                    }}
-                  >
-                    <Text
+              {filteredTracks.length === 0 ? (
+                <Text style={styles.noTracksText}>
+                  No tracks have readings for {selectedYear}.{'\n'}
+                  Select a different year or start recording data.
+                </Text>
+              ) : (
+                filteredTracks.map((track, index) => (
+                  <React.Fragment key={index}>
+                    <TouchableOpacity
                       style={[
-                        styles.trackOptionText,
-                        selectedTrack?.id === track.id && styles.trackOptionTextSelected,
+                        styles.trackOption,
+                        selectedTrack?.id === track.id && styles.trackOptionSelected,
                       ]}
+                      onPress={() => {
+                        setSelectedTrack(track);
+                        setShowTrackPicker(false);
+                      }}
                     >
-                      {track.name}
-                    </Text>
-                  </TouchableOpacity>
-                </React.Fragment>
-              ))}
+                      <Text
+                        style={[
+                          styles.trackOptionText,
+                          selectedTrack?.id === track.id && styles.trackOptionTextSelected,
+                        ]}
+                      >
+                        {track.name}
+                      </Text>
+                    </TouchableOpacity>
+                  </React.Fragment>
+                ))
+              )}
             </View>
           )}
         </View>
@@ -255,7 +289,10 @@ export default function BrowseScreen() {
               color={colors.textSecondary}
             />
             <Text style={styles.emptyText}>
-              No readings yet for {selectedYear}.{'\n'}Start recording data to see it here!
+              {filteredTracks.length === 0 
+                ? `No tracks have readings for ${selectedYear}.${'\n'}Select a different year or start recording data.`
+                : `No readings yet for ${selectedYear}.${'\n'}Start recording data to see it here!`
+              }
             </Text>
           </View>
         ) : (
@@ -446,6 +483,13 @@ function getStyles(colors: ReturnType<typeof useThemeColors>) {
     },
     trackOptionTextSelected: {
       color: '#ffffff',
+    },
+    noTracksText: {
+      fontSize: 14,
+      textAlign: 'center',
+      paddingVertical: 12,
+      color: colors.textSecondary,
+      lineHeight: 20,
     },
     emptyState: {
       alignItems: 'center',
