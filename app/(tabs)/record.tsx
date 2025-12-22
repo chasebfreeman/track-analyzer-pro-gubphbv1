@@ -29,6 +29,8 @@ export default function RecordScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [classCurrentlyRunning, setClassCurrentlyRunning] = useState('');
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  const [availableYears, setAvailableYears] = useState<number[]>([]);
+  const [showYearPicker, setShowYearPicker] = useState(false);
 
   const [leftLane, setLeftLane] = useState<LaneReading>({
     trackTemp: '',
@@ -55,6 +57,7 @@ export default function RecordScreen() {
   useEffect(() => {
     console.log('RecordScreen mounted');
     loadTracks();
+    loadAvailableYears();
   }, []);
 
   useFocusEffect(
@@ -65,6 +68,7 @@ export default function RecordScreen() {
       loadTracks().then(() => {
         console.log('Tracks reloaded on focus');
       });
+      loadAvailableYears();
     }, [])
   );
 
@@ -100,6 +104,36 @@ export default function RecordScreen() {
       console.error('Error loading tracks:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loadAvailableYears = async () => {
+    try {
+      const years = await StorageService.getAvailableYears();
+      const currentYear = new Date().getFullYear();
+      
+      // Create a comprehensive list of years from 2024 to current year + 1
+      const allYears = new Set<number>();
+      
+      // Add years from data
+      years.forEach(year => allYears.add(year));
+      
+      // Always include 2024, 2025, current year, and next year
+      allYears.add(2024);
+      allYears.add(2025);
+      allYears.add(currentYear);
+      allYears.add(currentYear + 1);
+      
+      // Convert to sorted array (newest first)
+      const sortedYears = Array.from(allYears).sort((a, b) => b - a);
+      
+      console.log('Available years for record screen:', sortedYears);
+      setAvailableYears(sortedYears);
+    } catch (error) {
+      console.error('Error loading available years:', error);
+      // Fallback to basic years if there's an error
+      const currentYear = new Date().getFullYear();
+      setAvailableYears([currentYear + 1, currentYear, 2025, 2024].filter((v, i, a) => a.indexOf(v) === i).sort((a, b) => b - a));
     }
   };
 
@@ -140,6 +174,8 @@ export default function RecordScreen() {
       leftLane,
       rightLane,
     };
+
+    console.log('Saving reading with year:', selectedYear);
 
     try {
       await StorageService.saveReading(reading);
@@ -317,14 +353,61 @@ export default function RecordScreen() {
       >
         <Text style={styles.title}>Record Data</Text>
 
-        <View style={styles.yearBadge}>
-          <IconSymbol
-            ios_icon_name="calendar"
-            android_material_icon_name="calendar_today"
-            size={18}
-            color={colors.primary}
-          />
-          <Text style={styles.yearBadgeText}>Recording for {selectedYear}</Text>
+        <View style={styles.yearSelector}>
+          <Text style={styles.label}>Select Year *</Text>
+          <TouchableOpacity
+            style={styles.yearButton}
+            onPress={() => {
+              console.log('Year picker toggled');
+              Keyboard.dismiss();
+              setShowYearPicker(!showYearPicker);
+            }}
+          >
+            <View style={styles.yearButtonContent}>
+              <IconSymbol
+                ios_icon_name="calendar"
+                android_material_icon_name="calendar_today"
+                size={20}
+                color={colors.primary}
+              />
+              <Text style={styles.yearButtonText}>{selectedYear}</Text>
+            </View>
+            <IconSymbol
+              ios_icon_name="chevron.down"
+              android_material_icon_name={showYearPicker ? 'expand_less' : 'expand_more'}
+              size={20}
+              color={colors.text}
+            />
+          </TouchableOpacity>
+
+          {showYearPicker && (
+            <View style={styles.yearList}>
+              {availableYears.map((year, index) => (
+                <React.Fragment key={index}>
+                  <TouchableOpacity
+                    style={[
+                      styles.yearOption,
+                      selectedYear === year && styles.yearOptionSelected,
+                    ]}
+                    onPress={() => {
+                      console.log('Year selected in record screen:', year);
+                      setSelectedYear(year);
+                      setShowYearPicker(false);
+                    }}
+                  >
+                    <Text
+                      style={[
+                        styles.yearOptionText,
+                        selectedYear === year && styles.yearOptionTextSelected,
+                      ]}
+                    >
+                      {year}
+                    </Text>
+                  </TouchableOpacity>
+                </React.Fragment>
+              ))}
+            </View>
+          )}
         </View>
 
         <View style={styles.trackSelector}>
@@ -409,7 +492,7 @@ export default function RecordScreen() {
                 size={20}
                 color="#ffffff"
               />
-              <Text style={styles.saveButtonText}>Save Reading</Text>
+              <Text style={styles.saveButtonText}>Save Reading for {selectedYear}</Text>
             </TouchableOpacity>
           </>
         )}
@@ -435,26 +518,62 @@ function getStyles(colors: ReturnType<typeof useThemeColors>) {
     title: {
       fontSize: 28,
       fontWeight: '700',
-      marginBottom: 12,
+      marginBottom: 20,
       color: colors.text,
     },
-    yearBadge: {
+    yearSelector: {
+      backgroundColor: colors.card,
+      borderRadius: 12,
+      padding: 16,
+      marginBottom: 20,
+      boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
+      elevation: 2,
+    },
+    yearButton: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      backgroundColor: colors.background,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      paddingVertical: 12,
+      paddingHorizontal: 12,
+    },
+    yearButtonContent: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: colors.card,
-      paddingVertical: 8,
-      paddingHorizontal: 12,
-      borderRadius: 20,
-      alignSelf: 'flex-start',
-      marginBottom: 20,
-      gap: 6,
-      boxShadow: '0px 1px 3px rgba(0, 0, 0, 0.1)',
-      elevation: 1,
+      gap: 8,
     },
-    yearBadgeText: {
-      fontSize: 14,
+    yearButtonText: {
+      fontSize: 18,
       fontWeight: '600',
       color: colors.text,
+    },
+    yearList: {
+      marginTop: 12,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      paddingTop: 12,
+    },
+    yearOption: {
+      paddingVertical: 12,
+      paddingHorizontal: 12,
+      borderRadius: 8,
+      marginBottom: 8,
+      backgroundColor: colors.background,
+    },
+    yearOptionSelected: {
+      backgroundColor: colors.primary,
+    },
+    yearOptionText: {
+      fontSize: 16,
+      fontWeight: '500',
+      color: colors.text,
+      textAlign: 'center',
+    },
+    yearOptionTextSelected: {
+      color: '#ffffff',
     },
     trackSelector: {
       backgroundColor: colors.card,
