@@ -9,6 +9,7 @@ import {
   TextInput,
   Alert,
   Platform,
+  Keyboard,
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { colors, commonStyles } from '@/styles/commonStyles';
@@ -61,6 +62,7 @@ export default function TracksScreen() {
       setTrackName('');
       setTrackLocation('');
       setShowAddForm(false);
+      Keyboard.dismiss();
       loadTracks();
       Alert.alert('Success', 'Track added successfully!');
     } catch (error) {
@@ -95,7 +97,8 @@ export default function TracksScreen() {
 
   const handleTrackPress = useCallback((track: Track) => {
     console.log('Track pressed:', track.name, 'ID:', track.id);
-    router.push({
+    // Use replace instead of push to avoid navigation stack issues
+    router.replace({
       pathname: '/(tabs)/record',
       params: { trackId: track.id, trackName: track.name },
     });
@@ -107,12 +110,18 @@ export default function TracksScreen() {
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
         <View style={styles.header}>
           <Text style={styles.title}>Race Tracks</Text>
           <TouchableOpacity
             style={styles.addButton}
-            onPress={() => setShowAddForm(!showAddForm)}
+            onPress={() => {
+              setShowAddForm(!showAddForm);
+              if (showAddForm) {
+                Keyboard.dismiss();
+              }
+            }}
             activeOpacity={0.7}
           >
             <IconSymbol
@@ -133,6 +142,7 @@ export default function TracksScreen() {
               placeholderTextColor={colors.textSecondary}
               value={trackName}
               onChangeText={setTrackName}
+              returnKeyType="next"
             />
             <TextInput
               style={styles.input}
@@ -140,6 +150,8 @@ export default function TracksScreen() {
               placeholderTextColor={colors.textSecondary}
               value={trackLocation}
               onChangeText={setTrackLocation}
+              returnKeyType="done"
+              onSubmitEditing={handleAddTrack}
             />
             <TouchableOpacity style={styles.submitButton} onPress={handleAddTrack}>
               <Text style={styles.submitButtonText}>Add Track</Text>

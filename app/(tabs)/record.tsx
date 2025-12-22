@@ -10,6 +10,7 @@ import {
   Alert,
   Image,
   Platform,
+  Keyboard,
 } from 'react-native';
 import { useLocalSearchParams, useFocusEffect } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
@@ -119,6 +120,8 @@ export default function RecordScreen() {
       return;
     }
 
+    Keyboard.dismiss();
+
     const now = new Date();
     const reading: TrackReading = {
       id: Date.now().toString(),
@@ -182,6 +185,7 @@ export default function RecordScreen() {
         value={lane.trackTemp}
         onChangeText={(text) => setLane({ ...lane, trackTemp: text })}
         keyboardType="numeric"
+        returnKeyType="next"
       />
 
       <Text style={styles.label}>UV Index</Text>
@@ -192,6 +196,7 @@ export default function RecordScreen() {
         value={lane.uvIndex}
         onChangeText={(text) => setLane({ ...lane, uvIndex: text })}
         keyboardType="numeric"
+        returnKeyType="next"
       />
 
       <Text style={styles.label}>Keg SL</Text>
@@ -202,6 +207,7 @@ export default function RecordScreen() {
         value={lane.kegSL}
         onChangeText={(text) => setLane({ ...lane, kegSL: text })}
         keyboardType="numeric"
+        returnKeyType="next"
       />
 
       <Text style={styles.label}>Keg Out</Text>
@@ -212,6 +218,7 @@ export default function RecordScreen() {
         value={lane.kegOut}
         onChangeText={(text) => setLane({ ...lane, kegOut: text })}
         keyboardType="numeric"
+        returnKeyType="next"
       />
 
       <Text style={styles.label}>Grippo SL</Text>
@@ -222,6 +229,7 @@ export default function RecordScreen() {
         value={lane.grippoSL}
         onChangeText={(text) => setLane({ ...lane, grippoSL: text })}
         keyboardType="numeric"
+        returnKeyType="next"
       />
 
       <Text style={styles.label}>Grippo Out</Text>
@@ -232,6 +240,7 @@ export default function RecordScreen() {
         value={lane.grippoOut}
         onChangeText={(text) => setLane({ ...lane, grippoOut: text })}
         keyboardType="numeric"
+        returnKeyType="next"
       />
 
       <Text style={styles.label}>Shine</Text>
@@ -241,6 +250,7 @@ export default function RecordScreen() {
         placeholderTextColor={colors.textSecondary}
         value={lane.shine}
         onChangeText={(text) => setLane({ ...lane, shine: text })}
+        returnKeyType="next"
       />
 
       <Text style={styles.label}>Notes</Text>
@@ -252,6 +262,7 @@ export default function RecordScreen() {
         onChangeText={(text) => setLane({ ...lane, notes: text })}
         multiline
         numberOfLines={3}
+        returnKeyType="done"
       />
 
       <TouchableOpacity
@@ -281,6 +292,7 @@ export default function RecordScreen() {
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
         <Text style={styles.title}>Record Data</Text>
 
@@ -290,6 +302,7 @@ export default function RecordScreen() {
             style={styles.trackButton}
             onPress={() => {
               console.log('Track picker toggled');
+              Keyboard.dismiss();
               setShowTrackPicker(!showTrackPicker);
             }}
           >
