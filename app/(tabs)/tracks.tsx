@@ -62,16 +62,14 @@ export default function TracksScreen() {
   const filterTracksByYear = async () => {
     console.log('Filtering tracks for year:', selectedYear);
     try {
-      // Get all tracks that have readings in the selected year OR have no readings at all
+      // Only show tracks that have readings in the selected year
       const tracksToShow: Track[] = [];
       
       for (const track of allTracks) {
         const yearsForTrack = await StorageService.getAvailableYearsForTrack(track.id);
         
-        // Show track if:
-        // 1. It has readings in the selected year
-        // 2. It has no readings at all (so users can add readings to it)
-        if (yearsForTrack.length === 0 || yearsForTrack.includes(selectedYear)) {
+        // Only show track if it has readings in the selected year
+        if (yearsForTrack.includes(selectedYear)) {
           tracksToShow.push(track);
         }
       }
