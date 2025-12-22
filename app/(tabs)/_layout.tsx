@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { Stack } from 'expo-router';
+import { View, StyleSheet } from 'react-native';
 import FloatingTabBar, { TabBarItem } from '@/components/FloatingTabBar';
 
 export default function TabLayout() {
@@ -26,7 +27,7 @@ export default function TabLayout() {
   ];
 
   return (
-    <>
+    <View style={styles.container}>
       <Stack
         screenOptions={{
           headerShown: false,
@@ -57,6 +58,12 @@ export default function TabLayout() {
         />
       </Stack>
       <FloatingTabBar tabs={tabs} />
-    </>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+});

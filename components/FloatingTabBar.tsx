@@ -13,12 +13,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { IconSymbol } from '@/components/IconSymbol';
 import { BlurView } from 'expo-blur';
 import { useTheme } from '@react-navigation/native';
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-  interpolate,
-} from 'react-native-reanimated';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Href } from 'expo-router';
 
@@ -47,131 +41,42 @@ export default function FloatingTabBar({
   const router = useRouter();
   const pathname = usePathname();
   const theme = useTheme();
-  const animatedValue = useSharedValue(0);
-  const [isMounted, setIsMounted] = React.useState(false);
 
-  // Ensure component is fully mounted before accepting touches
-  React.useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsMounted(true);
-      console.log('FloatingTabBar: Component mounted and ready');
-    }, 50);
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Improved active tab detection with better path matching
+  // Simplified active tab detection
   const activeTabIndex = React.useMemo(() => {
-    // Find the best matching tab based on the current pathname
-    let bestMatch = -1;
-    let bestMatchScore = 0;
-
-    tabs.forEach((tab, index) => {
-      let score = 0;
-
-      // Exact route match gets highest score
-      if (pathname === tab.route) {
-        score = 100;
-      }
-      // Check if pathname starts with tab route (for nested routes)
-      else if (pathname.startsWith(tab.route as string)) {
-        score = 80;
-      }
-      // Check if pathname contains the tab name
-      else if (pathname.includes(tab.name)) {
-        score = 60;
-      }
-      // Check for partial matches in the route
-      else if (tab.route.includes('/(tabs)/') && pathname.includes(tab.route.split('/(tabs)/')[1])) {
-        score = 40;
-      }
-
-      if (score > bestMatchScore) {
-        bestMatchScore = score;
-        bestMatch = index;
-      }
+    const index = tabs.findIndex(tab => {
+      const routeStr = tab.route as string;
+      return pathname === routeStr || pathname.includes(tab.name);
     });
-
-    // Default to first tab if no match found
-    return bestMatch >= 0 ? bestMatch : 0;
+    console.log('FloatingTabBar: Active tab index:', index, 'for pathname:', pathname);
+    return index >= 0 ? index : 0;
   }, [pathname, tabs]);
-
-  React.useEffect(() => {
-    if (activeTabIndex >= 0) {
-      animatedValue.value = withSpring(activeTabIndex, {
-        damping: 20,
-        stiffness: 120,
-        mass: 1,
-      });
-    }
-  }, [activeTabIndex, animatedValue]);
 
   const handleTabPress = React.useCallback((route: Href, tabName: string) => {
     console.log('FloatingTabBar: Tab pressed:', tabName, 'Route:', route);
-    // Use push for more reliable navigation
-    router.push(route);
+    try {
+      router.push(route);
+    } catch (error) {
+      console.error('FloatingTabBar: Navigation error:', error);
+    }
   }, [router]);
 
-  const tabWidthPercent = ((100 / tabs.length) - 1).toFixed(2);
-
-  const indicatorStyle = useAnimatedStyle(() => {
-    const tabWidth = (containerWidth - 8) / tabs.length; // Account for container padding (4px on each side)
-    return {
-      transform: [
-        {
-          translateX: interpolate(
-            animatedValue.value,
-            [0, tabs.length - 1],
-            [0, tabWidth * (tabs.length - 1)]
-          ),
-        },
-      ],
-    };
-  });
-
   // Dynamic styles based on theme
-  const dynamicStyles = {
-    blurContainer: {
-      ...styles.blurContainer,
-      borderWidth: 1.2,
-      borderColor: 'rgba(255, 255, 255, 1)',
-      ...Platform.select({
-        ios: {
-          backgroundColor: theme.dark
-            ? 'rgba(28, 28, 30, 0.8)'
-            : 'rgba(255, 255, 255, 0.6)',
-        },
-        android: {
-          backgroundColor: theme.dark
-            ? 'rgba(28, 28, 30, 0.95)'
-            : 'rgba(255, 255, 255, 0.6)',
-        },
-        web: {
-          backgroundColor: theme.dark
-            ? 'rgba(28, 28, 30, 0.95)'
-            : 'rgba(255, 255, 255, 0.6)',
-          backdropFilter: 'blur(10px)',
-        },
-      }),
-    },
-    background: {
-      ...styles.background,
-    },
-    indicator: {
-      ...styles.indicator,
-      backgroundColor: theme.dark
-        ? 'rgba(255, 255, 255, 0.08)' // Subtle white overlay in dark mode
-        : 'rgba(0, 0, 0, 0.04)', // Subtle black overlay in light mode
-      width: `${tabWidthPercent}%` as `${number}%`, // Dynamic width based on number of tabs
-    },
-  };
-
-  if (!isMounted) {
-    return null;
-  }
+  const blurTint = theme.dark ? 'dark' : 'light';
+  const backgroundColor = theme.dark
+    ? 'rgba(28, 28, 30, 0.95)'
+    : 'rgba(255, 255, 255, 0.95)';
 
   return (
-    <View style={styles.outerContainer} pointerEvents="box-none">
-      <SafeAreaView style={styles.safeArea} edges={['bottom']} pointerEvents="box-none">
+    <View 
+      style={styles.outerContainer}
+      pointerEvents="box-none"
+    >
+      <SafeAreaView 
+        style={styles.safeArea} 
+        edges={['bottom']}
+        pointerEvents="box-none"
+      >
         <View 
           style={[
             styles.container,
@@ -180,13 +85,21 @@ export default function FloatingTabBar({
               marginBottom: bottomMargin ?? 20
             }
           ]}
+          pointerEvents="auto"
         >
           <BlurView
             intensity={80}
-            style={[dynamicStyles.blurContainer, { borderRadius }]}
+            tint={blurTint}
+            style={[
+              styles.blurContainer,
+              { 
+                borderRadius,
+                backgroundColor,
+                borderWidth: 1.2,
+                borderColor: theme.dark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+              }
+            ]}
           >
-            <View style={dynamicStyles.background} pointerEvents="none" />
-            <Animated.View style={[dynamicStyles.indicator, indicatorStyle]} pointerEvents="none" />
             <View style={styles.tabsContainer}>
               {tabs.map((tab, index) => {
                 const isActive = activeTabIndex === index;
@@ -194,9 +107,17 @@ export default function FloatingTabBar({
                 return (
                   <React.Fragment key={index}>
                     <TouchableOpacity
-                      style={styles.tab}
+                      style={[
+                        styles.tab,
+                        isActive && {
+                          backgroundColor: theme.dark
+                            ? 'rgba(255, 255, 255, 0.08)'
+                            : 'rgba(0, 0, 0, 0.04)',
+                          borderRadius: 27,
+                        }
+                      ]}
                       onPress={() => handleTabPress(tab.route, tab.name)}
-                      activeOpacity={0.7}
+                      activeOpacity={0.6}
                       hitSlop={{ top: 10, bottom: 10, left: 5, right: 5 }}
                     >
                       <IconSymbol
@@ -232,8 +153,8 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    zIndex: 1000,
-    elevation: 1000,
+    zIndex: 9999,
+    elevation: 9999,
   },
   safeArea: {
     alignItems: 'center',
@@ -244,17 +165,11 @@ const styles = StyleSheet.create({
   },
   blurContainer: {
     overflow: 'hidden',
-  },
-  background: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  indicator: {
-    position: 'absolute',
-    top: 4,
-    left: 2,
-    bottom: 4,
-    borderRadius: 27,
-    width: `${(100 / 2) - 1}%`, // Default for 2 tabs, will be overridden by dynamic styles
+    ...Platform.select({
+      web: {
+        backdropFilter: 'blur(10px)',
+      },
+    }),
   },
   tabsContainer: {
     flexDirection: 'row',
@@ -267,7 +182,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 8,
-    zIndex: 10,
+    marginHorizontal: 2,
   },
   tabLabel: {
     fontSize: 9,
