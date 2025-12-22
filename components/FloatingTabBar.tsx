@@ -19,15 +19,15 @@ const { width: screenWidth } = Dimensions.get('window');
 
 interface TabConfig {
   name: string;
-  iosIcon: string;
-  androidIcon: string;
+  ios_icon_name: string;
+  android_material_icon_name: string;
   label: string;
 }
 
 const TAB_CONFIGS: TabConfig[] = [
-  { name: 'tracks', iosIcon: 'map.fill', androidIcon: 'map', label: 'Tracks' },
-  { name: 'record', iosIcon: 'plus.circle.fill', androidIcon: 'add_circle', label: 'Record' },
-  { name: 'browse', iosIcon: 'magnifyingglass', androidIcon: 'search', label: 'Browse' },
+  { name: 'tracks', ios_icon_name: 'map.fill', android_material_icon_name: 'map', label: 'Tracks' },
+  { name: 'record', ios_icon_name: 'plus.circle.fill', android_material_icon_name: 'add_circle', label: 'Record' },
+  { name: 'browse', ios_icon_name: 'magnifyingglass', android_material_icon_name: 'search', label: 'Browse' },
 ];
 
 export default function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
@@ -138,8 +138,8 @@ export default function FloatingTabBar({ state, descriptors, navigation }: Botto
                     hitSlop={{ top: 10, bottom: 10, left: 5, right: 5 }}
                   >
                     <IconSymbol
-                      ios_icon_name={tabConfig.iosIcon}
-                      android_material_icon_name={tabConfig.androidIcon}
+                      ios_icon_name={tabConfig.ios_icon_name}
+                      android_material_icon_name={tabConfig.android_material_icon_name}
                       size={24}
                       color={iconColor}
                     />
