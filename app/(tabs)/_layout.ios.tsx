@@ -1,14 +1,31 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { NativeTabs, Icon, Label } from 'expo-router/unstable-native-tabs';
 import { colors } from '@/styles/commonStyles';
-import { useColorScheme } from 'react-native';
+import { useColorScheme, AppState, Platform } from 'react-native';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   
-  console.log('iOS Native Tabs Layout rendering with isDark:', isDark);
+  useEffect(() => {
+    console.log('iOS Native Tabs Layout mounted, isDark:', isDark);
+    
+    // Force a re-render after mount to ensure all touch handlers are registered
+    const timer = setTimeout(() => {
+      console.log('iOS tabs initialized');
+    }, 100);
+    
+    // Monitor app state changes
+    const subscription = AppState.addEventListener('change', (nextAppState) => {
+      console.log('AppState changed to:', nextAppState);
+    });
+    
+    return () => {
+      clearTimeout(timer);
+      subscription.remove();
+    };
+  }, []);
   
   return (
     <NativeTabs

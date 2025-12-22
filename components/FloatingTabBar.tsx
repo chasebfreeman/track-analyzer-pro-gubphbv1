@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Platform,
   Dimensions,
+  AppState,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { IconSymbol } from '@/components/IconSymbol';
@@ -35,6 +36,31 @@ interface FloatingTabBarProps {
 function TabButton({ name, icon, label }: TabConfig) {
   const theme = useTheme();
   const trigger = useTabTrigger({ name });
+  const [isReady, setIsReady] = useState(false);
+
+  useEffect(() => {
+    // Ensure the button is ready to receive touch events
+    const timer = setTimeout(() => {
+      setIsReady(true);
+      console.log(`Tab button ${name} is ready`);
+    }, 50);
+    
+    return () => clearTimeout(timer);
+  }, [name]);
+
+  const handlePress = () => {
+    console.log(`Tab ${name} pressed, isFocused: ${trigger.isFocused}`);
+    if (isReady && trigger.onPress) {
+      trigger.onPress();
+    }
+  };
+
+  const handleLongPress = () => {
+    console.log(`Tab ${name} long pressed`);
+    if (isReady && trigger.onLongPress) {
+      trigger.onLongPress();
+    }
+  };
 
   return (
     <TouchableOpacity
@@ -47,10 +73,11 @@ function TabButton({ name, icon, label }: TabConfig) {
           borderRadius: 27,
         }
       ]}
-      onPress={trigger.onPress}
-      onLongPress={trigger.onLongPress}
+      onPress={handlePress}
+      onLongPress={handleLongPress}
       activeOpacity={0.6}
       hitSlop={{ top: 10, bottom: 10, left: 5, right: 5 }}
+      disabled={!isReady}
     >
       <IconSymbol
         android_material_icon_name={icon}
@@ -73,6 +100,31 @@ function TabButton({ name, icon, label }: TabConfig) {
 
 export default function FloatingTabBar({ children }: FloatingTabBarProps) {
   const theme = useTheme();
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  useEffect(() => {
+    console.log('FloatingTabBar mounted');
+    
+    // Ensure the tab bar is fully initialized before accepting touches
+    const initTimer = setTimeout(() => {
+      setIsInitialized(true);
+      console.log('FloatingTabBar initialized and ready for touches');
+    }, 100);
+
+    // Monitor app state to re-initialize if needed
+    const subscription = AppState.addEventListener('change', (nextAppState) => {
+      console.log('FloatingTabBar - AppState changed to:', nextAppState);
+      if (nextAppState === 'active') {
+        // Re-enable touch events when app becomes active
+        setIsInitialized(true);
+      }
+    });
+
+    return () => {
+      clearTimeout(initTimer);
+      subscription.remove();
+    };
+  }, []);
 
   const blurTint = theme.dark ? 'dark' : 'light';
   const backgroundColor = theme.dark
@@ -99,7 +151,7 @@ export default function FloatingTabBar({ children }: FloatingTabBarProps) {
                 marginBottom: 20
               }
             ]}
-            pointerEvents="auto"
+            pointerEvents={isInitialized ? "auto" : "none"}
           >
             <BlurView
               intensity={80}
@@ -116,7 +168,7 @@ export default function FloatingTabBar({ children }: FloatingTabBarProps) {
             >
               <View style={styles.tabsContainer}>
                 {TAB_CONFIGS.map((config, index) => (
-                  <TabButton key={index} {...config} />
+                  <TabButton key={`${config.name}-${index}`} {...config} />
                 ))}
               </View>
             </BlurView>
