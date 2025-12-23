@@ -31,145 +31,203 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isPinSetup, setIsPinSetup] = useState(false);
-  const isSupabaseEnabled = isSupabaseConfigured();
+  const [isSupabaseEnabled, setIsSupabaseEnabled] = useState(false);
 
   useEffect(() => {
-    if (isSupabaseEnabled) {
-      initializeSupabaseAuth();
-    } else {
-      initializeLocalAuth();
+    console.log('SupabaseAuthContext: Initializing...');
+    initializeAuth();
+  }, []);
+
+  const initializeAuth = async () => {
+    try {
+      console.log('SupabaseAuthContext: Checking Supabase configuration...');
+      const supabaseConfigured = isSupabaseConfigured();
+      console.log('SupabaseAuthContext: Supabase configured:', supabaseConfigured);
+      setIsSupabaseEnabled(supabaseConfigured);
+
+      if (supabaseConfigured) {
+        await initializeSupabaseAuth();
+      } else {
+        await initializeLocalAuth();
+      }
+    } catch (error) {
+      console.error('SupabaseAuthContext: Error during initialization:', error);
+      // Fallback to local auth if Supabase fails
+      await initializeLocalAuth();
     }
-  }, [isSupabaseEnabled]);
+  };
 
   const initializeSupabaseAuth = async () => {
     try {
-      // Get initial session
-      const { data: { session: initialSession } } = await supabase.auth.getSession();
+      console.log('SupabaseAuthContext: Initializing Supabase auth...');
+      
+      // Get initial session with timeout
+      const sessionPromise = supabase.auth.getSession();
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Session fetch timeout')), 5000)
+      );
+
+      const { data: { session: initialSession }, error } = await Promise.race([
+        sessionPromise,
+        timeoutPromise
+      ]) as any;
+
+      if (error) {
+        console.error('SupabaseAuthContext: Error getting session:', error);
+        throw error;
+      }
+
+      console.log('SupabaseAuthContext: Initial session:', initialSession ? 'Found' : 'Not found');
       setSession(initialSession);
       setUser(initialSession?.user ?? null);
       setIsAuthenticated(!!initialSession);
 
       // Listen for auth changes
       const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-        console.log('Auth state changed:', _event);
+        console.log('SupabaseAuthContext: Auth state changed:', _event);
         setSession(session);
         setUser(session?.user ?? null);
         setIsAuthenticated(!!session);
       });
 
       setIsLoading(false);
+      console.log('SupabaseAuthContext: Supabase auth initialized successfully');
 
       return () => {
         subscription.unsubscribe();
       };
     } catch (error) {
-      console.error('Error initializing Supabase auth:', error);
-      setIsLoading(false);
+      console.error('SupabaseAuthContext: Error initializing Supabase auth:', error);
+      // Fallback to local auth
+      setIsSupabaseEnabled(false);
+      await initializeLocalAuth();
     }
   };
 
   const initializeLocalAuth = async () => {
     try {
+      console.log('SupabaseAuthContext: Initializing local PIN auth...');
       const pinSetup = await AuthService.isPinSetup();
+      console.log('SupabaseAuthContext: PIN setup:', pinSetup);
       setIsPinSetup(pinSetup);
       
       if (!pinSetup) {
         setIsAuthenticated(false);
       }
     } catch (error) {
-      console.error('Error checking PIN setup:', error);
+      console.error('SupabaseAuthContext: Error checking PIN setup:', error);
     } finally {
       setIsLoading(false);
+      console.log('SupabaseAuthContext: Local auth initialized');
     }
   };
 
   // Supabase auth methods
   const signInWithEmail = async (email: string, password: string) => {
     try {
+      console.log('SupabaseAuthContext: Signing in with email...');
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) {
+        console.error('SupabaseAuthContext: Sign in error:', error);
         return { success: false, error: error.message };
       }
 
+      console.log('SupabaseAuthContext: Sign in successful');
       return { success: true };
     } catch (error) {
-      console.error('Error signing in:', error);
+      console.error('SupabaseAuthContext: Error signing in:', error);
       return { success: false, error: 'An unexpected error occurred' };
     }
   };
 
   const signUpWithEmail = async (email: string, password: string) => {
     try {
+      console.log('SupabaseAuthContext: Signing up with email...');
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          emailRedirectTo: 'https://natively.dev/email-confirmed'
+        }
       });
 
       if (error) {
+        console.error('SupabaseAuthContext: Sign up error:', error);
         return { success: false, error: error.message };
       }
 
+      console.log('SupabaseAuthContext: Sign up successful');
       return { success: true };
     } catch (error) {
-      console.error('Error signing up:', error);
+      console.error('SupabaseAuthContext: Error signing up:', error);
       return { success: false, error: 'An unexpected error occurred' };
     }
   };
 
   const signOut = async () => {
     try {
+      console.log('SupabaseAuthContext: Signing out...');
       await supabase.auth.signOut();
       setUser(null);
       setSession(null);
       setIsAuthenticated(false);
+      console.log('SupabaseAuthContext: Sign out successful');
     } catch (error) {
-      console.error('Error signing out:', error);
+      console.error('SupabaseAuthContext: Error signing out:', error);
     }
   };
 
   // Local PIN auth methods (fallback)
   const authenticate = async (pin: string): Promise<boolean> => {
     try {
+      console.log('SupabaseAuthContext: Authenticating with PIN...');
       const isValid = await AuthService.verifyPin(pin);
       if (isValid) {
         setIsAuthenticated(true);
+        console.log('SupabaseAuthContext: PIN authentication successful');
         return true;
       }
+      console.log('SupabaseAuthContext: PIN authentication failed');
       return false;
     } catch (error) {
-      console.error('Error authenticating:', error);
+      console.error('SupabaseAuthContext: Error authenticating:', error);
       return false;
     }
   };
 
   const setupPin = async (pin: string): Promise<void> => {
     try {
+      console.log('SupabaseAuthContext: Setting up PIN...');
       await AuthService.setupPin(pin);
       setIsPinSetup(true);
       setIsAuthenticated(true);
+      console.log('SupabaseAuthContext: PIN setup successful');
     } catch (error) {
-      console.error('Error setting up PIN:', error);
+      console.error('SupabaseAuthContext: Error setting up PIN:', error);
       throw error;
     }
   };
 
   const logout = () => {
+    console.log('SupabaseAuthContext: Logging out (local)...');
     setIsAuthenticated(false);
   };
 
   const authenticateWithBiometrics = async (): Promise<boolean> => {
     try {
+      console.log('SupabaseAuthContext: Authenticating with biometrics...');
       const success = await AuthService.authenticateWithBiometrics();
       if (success) {
         setIsAuthenticated(true);
+        console.log('SupabaseAuthContext: Biometric authentication successful');
       }
       return success;
     } catch (error) {
-      console.error('Error authenticating with biometrics:', error);
+      console.error('SupabaseAuthContext: Error authenticating with biometrics:', error);
       return false;
     }
   };

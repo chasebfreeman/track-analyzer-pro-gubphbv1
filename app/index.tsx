@@ -1,37 +1,56 @@
 
 import { Redirect } from 'expo-router';
 import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, ActivityIndicator, StyleSheet, Text } from 'react-native';
 import { colors } from '@/styles/commonStyles';
+import { useEffect } from 'react';
 
 export default function Index() {
   const { isAuthenticated, isLoading, isPinSetup, isSupabaseEnabled } = useSupabaseAuth();
 
+  useEffect(() => {
+    console.log('Index: Auth state:', {
+      isAuthenticated,
+      isLoading,
+      isPinSetup,
+      isSupabaseEnabled
+    });
+  }, [isAuthenticated, isLoading, isPinSetup, isSupabaseEnabled]);
+
   if (isLoading) {
+    console.log('Index: Loading...');
     return (
       <View style={styles.container}>
         <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={styles.loadingText}>Loading...</Text>
       </View>
     );
   }
 
   // If Supabase is enabled, use Supabase auth
   if (isSupabaseEnabled) {
+    console.log('Index: Supabase enabled, authenticated:', isAuthenticated);
     if (isAuthenticated) {
+      console.log('Index: Redirecting to tracks (Supabase)');
       return <Redirect href="/(tabs)/tracks" />;
     }
+    console.log('Index: Redirecting to Supabase login');
     return <Redirect href="/auth/supabase-login" />;
   }
 
   // Otherwise use PIN auth
+  console.log('Index: PIN auth, setup:', isPinSetup, 'authenticated:', isAuthenticated);
   if (!isPinSetup) {
+    console.log('Index: Redirecting to PIN setup');
     return <Redirect href="/auth/setup-pin" />;
   }
 
   if (isAuthenticated) {
+    console.log('Index: Redirecting to tracks (PIN)');
     return <Redirect href="/(tabs)/tracks" />;
   }
 
+  console.log('Index: Redirecting to PIN login');
   return <Redirect href="/auth/login" />;
 }
 
@@ -41,5 +60,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: colors.background,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: colors.textSecondary,
   },
 });

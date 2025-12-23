@@ -9,6 +9,7 @@ import 'react-native-reanimated';
 import { useColorScheme } from 'react-native';
 import { SupabaseAuthProvider } from '@/contexts/SupabaseAuthContext';
 
+// Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
@@ -19,6 +20,7 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (loaded) {
+      console.log('Fonts loaded, hiding splash screen');
       SplashScreen.hideAsync();
     }
   }, [loaded]);
