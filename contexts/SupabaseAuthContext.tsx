@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { supabase, isSupabaseConfigured } from '@/utils/supabase';
 import { AuthService } from '@/utils/authService';
 import { Session, User } from '@supabase/supabase-js';
@@ -34,14 +34,27 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
   const [isPinSetup, setIsPinSetup] = useState(false);
   const [isSupabaseEnabled, setIsSupabaseEnabled] = useState(false);
 
-  useEffect(() => {
-    console.log('SupabaseAuthContext: Initializing... Platform:', Platform.OS);
-    
-    // Initialize auth asynchronously but don't block rendering
-    initializeAuth();
+  const initializeLocalAuth = useCallback(async () => {
+    try {
+      console.log('SupabaseAuthContext: Initializing local PIN auth...');
+      const pinSetup = await AuthService.isPinSetup();
+      console.log('SupabaseAuthContext: PIN setup:', pinSetup);
+      setIsPinSetup(pinSetup);
+      
+      if (!pinSetup) {
+        setIsAuthenticated(false);
+      }
+    } catch (error) {
+      console.error('SupabaseAuthContext: Error checking PIN setup:', error);
+      setIsPinSetup(false);
+      setIsAuthenticated(false);
+    } finally {
+      setIsLoading(false);
+      console.log('SupabaseAuthContext: Local auth initialized, isLoading set to false');
+    }
   }, []);
 
-  const initializeAuth = async () => {
+  const initializeAuth = useCallback(async () => {
     try {
       console.log('SupabaseAuthContext: Starting initialization...');
       
@@ -102,27 +115,14 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
       setIsSupabaseEnabled(false);
       await initializeLocalAuth();
     }
-  };
+  }, [initializeLocalAuth]);
 
-  const initializeLocalAuth = async () => {
-    try {
-      console.log('SupabaseAuthContext: Initializing local PIN auth...');
-      const pinSetup = await AuthService.isPinSetup();
-      console.log('SupabaseAuthContext: PIN setup:', pinSetup);
-      setIsPinSetup(pinSetup);
-      
-      if (!pinSetup) {
-        setIsAuthenticated(false);
-      }
-    } catch (error) {
-      console.error('SupabaseAuthContext: Error checking PIN setup:', error);
-      setIsPinSetup(false);
-      setIsAuthenticated(false);
-    } finally {
-      setIsLoading(false);
-      console.log('SupabaseAuthContext: Local auth initialized, isLoading set to false');
-    }
-  };
+  useEffect(() => {
+    console.log('SupabaseAuthContext: Initializing... Platform:', Platform.OS);
+    
+    // Initialize auth asynchronously but don't block rendering
+    initializeAuth();
+  }, [initializeAuth]);
 
   // Supabase auth methods
   const signInWithEmail = async (email: string, password: string) => {

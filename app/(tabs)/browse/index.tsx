@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -32,60 +32,14 @@ export default function BrowseScreen() {
   const [expandedDay, setExpandedDay] = useState<string | null>(null);
   const [showHistoricalAverages, setShowHistoricalAverages] = useState(false);
 
-  useEffect(() => {
-    loadTracks();
-    loadAllAvailableYears();
-  }, []);
-
-  useFocusEffect(
-    React.useCallback(() => {
-      console.log('Browse screen focused, reloading data');
-      loadTracks();
-      loadAllAvailableYears();
-    }, [])
-  );
-
-  useEffect(() => {
-    if (selectedTrack) {
-      loadReadings(selectedTrack.id, selectedYear);
-      loadAllTrackReadings(selectedTrack.id);
-    }
-  }, [selectedTrack, selectedYear]);
-
-  useEffect(() => {
-    filterTracksByYear();
-  }, [selectedYear, allTracks]);
-
-  const loadTracks = async () => {
+  const loadTracks = useCallback(async () => {
     console.log('Loading tracks in BrowseScreen...');
     const loadedTracks = await SupabaseStorageService.getTracks();
     console.log('Loaded tracks:', loadedTracks.length);
     setAllTracks(loadedTracks.sort((a, b) => a.name.localeCompare(b.name)));
-  };
+  }, []);
 
-  const filterTracksByYear = async () => {
-    console.log('Filtering tracks for year:', selectedYear);
-    const tracksWithReadings: Track[] = [];
-    
-    for (const track of allTracks) {
-      const trackReadings = await SupabaseStorageService.getReadingsByTrackAndYear(track.id, selectedYear);
-      if (trackReadings.length > 0) {
-        tracksWithReadings.push(track);
-      }
-    }
-    
-    console.log('Tracks with readings for', selectedYear, ':', tracksWithReadings.length);
-    setFilteredTracks(tracksWithReadings);
-    
-    if (selectedTrack && !tracksWithReadings.find(t => t.id === selectedTrack.id)) {
-      console.log('Selected track not in filtered list, resetting selection');
-      setSelectedTrack(tracksWithReadings.length > 0 ? tracksWithReadings[0] : null);
-    } else if (!selectedTrack && tracksWithReadings.length > 0) {
-      setSelectedTrack(tracksWithReadings[0]);
-    }
-  };
-
-  const loadAllAvailableYears = async () => {
+  const loadAllAvailableYears = useCallback(async () => {
     try {
       const years = await SupabaseStorageService.getAvailableYears();
       const currentYear = new Date().getFullYear();
@@ -108,7 +62,53 @@ export default function BrowseScreen() {
       const currentYear = new Date().getFullYear();
       setAvailableYears([currentYear + 1, currentYear, 2025, 2024].filter((v, i, a) => a.indexOf(v) === i).sort((a, b) => b - a));
     }
-  };
+  }, []);
+
+  const filterTracksByYear = useCallback(async () => {
+    console.log('Filtering tracks for year:', selectedYear);
+    const tracksWithReadings: Track[] = [];
+    
+    for (const track of allTracks) {
+      const trackReadings = await SupabaseStorageService.getReadingsByTrackAndYear(track.id, selectedYear);
+      if (trackReadings.length > 0) {
+        tracksWithReadings.push(track);
+      }
+    }
+    
+    console.log('Tracks with readings for', selectedYear, ':', tracksWithReadings.length);
+    setFilteredTracks(tracksWithReadings);
+    
+    if (selectedTrack && !tracksWithReadings.find(t => t.id === selectedTrack.id)) {
+      console.log('Selected track not in filtered list, resetting selection');
+      setSelectedTrack(tracksWithReadings.length > 0 ? tracksWithReadings[0] : null);
+    } else if (!selectedTrack && tracksWithReadings.length > 0) {
+      setSelectedTrack(tracksWithReadings[0]);
+    }
+  }, [selectedYear, allTracks, selectedTrack]);
+
+  useEffect(() => {
+    loadTracks();
+    loadAllAvailableYears();
+  }, [loadTracks, loadAllAvailableYears]);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log('Browse screen focused, reloading data');
+      loadTracks();
+      loadAllAvailableYears();
+    }, [loadTracks, loadAllAvailableYears])
+  );
+
+  useEffect(() => {
+    if (selectedTrack) {
+      loadReadings(selectedTrack.id, selectedYear);
+      loadAllTrackReadings(selectedTrack.id);
+    }
+  }, [selectedTrack, selectedYear]);
+
+  useEffect(() => {
+    filterTracksByYear();
+  }, [filterTracksByYear]);
 
   const loadReadings = async (trackId: string, year: number) => {
     console.log('Loading readings for track:', trackId, 'year:', year);

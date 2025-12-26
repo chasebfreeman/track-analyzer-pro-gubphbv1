@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -23,11 +23,7 @@ export default function LoginScreen() {
   const router = useRouter();
   const { authenticate, authenticateWithBiometrics } = useSupabaseAuth();
 
-  useEffect(() => {
-    checkBiometricAvailability();
-  }, []);
-
-  const checkBiometricAvailability = async () => {
+  const checkBiometricAvailability = useCallback(async () => {
     const available = await AuthService.isBiometricAvailable();
     const enabled = await AuthService.isBiometricEnabled();
     const types = await AuthService.getSupportedAuthTypes();
@@ -40,7 +36,11 @@ export default function LoginScreen() {
     if (available && enabled) {
       handleBiometricAuth();
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    checkBiometricAvailability();
+  }, [checkBiometricAvailability]);
 
   const handlePinInput = async (digit: string) => {
     const newPin = pin + digit;

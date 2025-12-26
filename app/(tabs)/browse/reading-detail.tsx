@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useCallback } from 'react';
 import {
   View,
   Text,
@@ -23,11 +23,7 @@ export default function ReadingDetailScreen() {
   const [reading, setReading] = React.useState<TrackReading | null>(null);
   const [track, setTrack] = React.useState<Track | null>(null);
 
-  React.useEffect(() => {
-    loadReading();
-  }, [params.readingId]);
-
-  const loadReading = async () => {
+  const loadReading = useCallback(async () => {
     try {
       const readings = await SupabaseStorageService.getReadings();
       const foundReading = readings.find((r) => r.id === params.readingId);
@@ -44,7 +40,11 @@ export default function ReadingDetailScreen() {
     } catch (error) {
       console.error('Error loading reading:', error);
     }
-  };
+  }, [params.readingId]);
+
+  React.useEffect(() => {
+    loadReading();
+  }, [loadReading]);
 
   const handleEdit = () => {
     if (!reading) return;

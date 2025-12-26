@@ -29,26 +29,7 @@ export default function TracksScreen() {
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [showYearPicker, setShowYearPicker] = useState(false);
 
-  useEffect(() => {
-    console.log('TracksScreen mounted');
-    loadTracks();
-    loadAvailableYears();
-  }, []);
-
-  useFocusEffect(
-    useCallback(() => {
-      console.log('Tracks screen focused, reloading tracks');
-      loadTracks();
-      loadAvailableYears();
-    }, [])
-  );
-
-  useEffect(() => {
-    console.log('Selected year changed to:', selectedYear);
-    filterTracksByYear();
-  }, [selectedYear, allTracks]);
-
-  const loadTracks = async () => {
+  const loadTracks = useCallback(async () => {
     console.log('Loading tracks...');
     try {
       const loadedTracks = await SupabaseStorageService.getTracks();
@@ -57,33 +38,9 @@ export default function TracksScreen() {
     } catch (error) {
       console.error('Error loading tracks:', error);
     }
-  };
+  }, []);
 
-  const filterTracksByYear = async () => {
-    console.log('Filtering tracks for year:', selectedYear);
-    try {
-      // Only show tracks that have readings in the selected year
-      const tracksToShow: Track[] = [];
-      
-      for (const track of allTracks) {
-        const yearsForTrack = await SupabaseStorageService.getAvailableYearsForTrack(track.id);
-        
-        // Only show track if it has readings in the selected year
-        if (yearsForTrack.includes(selectedYear)) {
-          tracksToShow.push(track);
-        }
-      }
-      
-      console.log('Tracks to show for', selectedYear, ':', tracksToShow.length);
-      console.log('Track names:', tracksToShow.map(t => t.name));
-      setFilteredTracks(tracksToShow);
-    } catch (error) {
-      console.error('Error filtering tracks by year:', error);
-      setFilteredTracks([]);
-    }
-  };
-
-  const loadAvailableYears = async () => {
+  const loadAvailableYears = useCallback(async () => {
     try {
       const years = await SupabaseStorageService.getAvailableYears();
       const currentYear = new Date().getFullYear();
@@ -111,7 +68,50 @@ export default function TracksScreen() {
       const currentYear = new Date().getFullYear();
       setAvailableYears([currentYear + 1, currentYear, 2025, 2024].filter((v, i, a) => a.indexOf(v) === i).sort((a, b) => b - a));
     }
-  };
+  }, []);
+
+  const filterTracksByYear = useCallback(async () => {
+    console.log('Filtering tracks for year:', selectedYear);
+    try {
+      // Only show tracks that have readings in the selected year
+      const tracksToShow: Track[] = [];
+      
+      for (const track of allTracks) {
+        const yearsForTrack = await SupabaseStorageService.getAvailableYearsForTrack(track.id);
+        
+        // Only show track if it has readings in the selected year
+        if (yearsForTrack.includes(selectedYear)) {
+          tracksToShow.push(track);
+        }
+      }
+      
+      console.log('Tracks to show for', selectedYear, ':', tracksToShow.length);
+      console.log('Track names:', tracksToShow.map(t => t.name));
+      setFilteredTracks(tracksToShow);
+    } catch (error) {
+      console.error('Error filtering tracks by year:', error);
+      setFilteredTracks([]);
+    }
+  }, [selectedYear, allTracks]);
+
+  useEffect(() => {
+    console.log('TracksScreen mounted');
+    loadTracks();
+    loadAvailableYears();
+  }, [loadTracks, loadAvailableYears]);
+
+  useFocusEffect(
+    useCallback(() => {
+      console.log('Tracks screen focused, reloading tracks');
+      loadTracks();
+      loadAvailableYears();
+    }, [loadTracks, loadAvailableYears])
+  );
+
+  useEffect(() => {
+    console.log('Selected year changed to:', selectedYear);
+    filterTracksByYear();
+  }, [filterTracksByYear]);
 
   const handleAddTrack = async () => {
     if (!trackName.trim()) {
@@ -163,7 +163,7 @@ export default function TracksScreen() {
         },
       ]
     );
-  }, []);
+  }, [loadTracks, loadAvailableYears]);
 
   const handleTrackPress = useCallback((track: Track) => {
     console.log('Track pressed:', track.name, 'ID:', track.id, 'Year:', selectedYear);

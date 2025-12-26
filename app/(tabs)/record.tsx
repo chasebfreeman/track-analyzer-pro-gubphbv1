@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -56,6 +56,36 @@ export default function RecordScreen() {
     notes: '',
   });
 
+  const loadAvailableYears = useCallback(async () => {
+    try {
+      const years = await SupabaseStorageService.getAvailableYears();
+      const currentYear = new Date().getFullYear();
+      
+      // Create a comprehensive list of years from 2024 to current year + 1
+      const allYears = new Set<number>();
+      
+      // Add years from data
+      years.forEach(year => allYears.add(year));
+      
+      // Always include 2024, 2025, current year, and next year
+      allYears.add(2024);
+      allYears.add(2025);
+      allYears.add(currentYear);
+      allYears.add(currentYear + 1);
+      
+      // Convert to sorted array (newest first)
+      const sortedYears = Array.from(allYears).sort((a, b) => b - a);
+      
+      console.log('Available years for record screen:', sortedYears);
+      setAvailableYears(sortedYears);
+    } catch (error) {
+      console.error('Error loading available years:', error);
+      // Fallback to basic years if there's an error
+      const currentYear = new Date().getFullYear();
+      setAvailableYears([currentYear + 1, currentYear, 2025, 2024].filter((v, i, a) => a.indexOf(v) === i).sort((a, b) => b - a));
+    }
+  }, []);
+
   // Load tracks on mount only
   useEffect(() => {
     console.log('RecordScreen mounted');
@@ -75,7 +105,7 @@ export default function RecordScreen() {
 
     loadInitialData();
     loadAvailableYears();
-  }, []);
+  }, [loadAvailableYears]);
 
   // Extract specific param values to avoid infinite re-renders
   const editModeParam = params.editMode as string | undefined;
@@ -129,7 +159,29 @@ export default function RecordScreen() {
         setEditMode(false);
         setEditingReadingId(null);
       }
-    }, [editModeParam, readingIdParam])
+    }, [
+      editModeParam,
+      readingIdParam,
+      params.classCurrentlyRunning,
+      params.leftLaneTrackTemp,
+      params.leftLaneUvIndex,
+      params.leftLaneKegSL,
+      params.leftLaneKegOut,
+      params.leftLaneGrippoSL,
+      params.leftLaneGrippoOut,
+      params.leftLaneShine,
+      params.leftLaneNotes,
+      params.leftLaneImageUri,
+      params.rightLaneTrackTemp,
+      params.rightLaneUvIndex,
+      params.rightLaneKegSL,
+      params.rightLaneKegOut,
+      params.rightLaneGrippoSL,
+      params.rightLaneGrippoOut,
+      params.rightLaneShine,
+      params.rightLaneNotes,
+      params.rightLaneImageUri,
+    ])
   );
 
   useEffect(() => {
@@ -152,36 +204,6 @@ export default function RecordScreen() {
       setSelectedYear(year);
     }
   }, [trackIdParam, yearParam, tracks]);
-
-  const loadAvailableYears = async () => {
-    try {
-      const years = await SupabaseStorageService.getAvailableYears();
-      const currentYear = new Date().getFullYear();
-      
-      // Create a comprehensive list of years from 2024 to current year + 1
-      const allYears = new Set<number>();
-      
-      // Add years from data
-      years.forEach(year => allYears.add(year));
-      
-      // Always include 2024, 2025, current year, and next year
-      allYears.add(2024);
-      allYears.add(2025);
-      allYears.add(currentYear);
-      allYears.add(currentYear + 1);
-      
-      // Convert to sorted array (newest first)
-      const sortedYears = Array.from(allYears).sort((a, b) => b - a);
-      
-      console.log('Available years for record screen:', sortedYears);
-      setAvailableYears(sortedYears);
-    } catch (error) {
-      console.error('Error loading available years:', error);
-      // Fallback to basic years if there's an error
-      const currentYear = new Date().getFullYear();
-      setAvailableYears([currentYear + 1, currentYear, 2025, 2024].filter((v, i, a) => a.indexOf(v) === i).sort((a, b) => b - a));
-    }
-  };
 
   const pickImage = async (lane: 'left' | 'right') => {
     const result = await ImagePicker.launchImageLibraryAsync({
