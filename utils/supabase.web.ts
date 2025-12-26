@@ -18,12 +18,14 @@ const createStorageAdapter = () => {
   const isLocalStorageAvailable = () => {
     try {
       if (typeof window === 'undefined' || !window.localStorage) {
+        console.log('localStorage: window or localStorage not available');
         return false;
       }
       // Test if we can actually use it
       const testKey = '__supabase_test__';
       window.localStorage.setItem(testKey, 'test');
       window.localStorage.removeItem(testKey);
+      console.log('localStorage: available and working');
       return true;
     } catch (error) {
       console.warn('localStorage not available:', error);
@@ -32,7 +34,6 @@ const createStorageAdapter = () => {
   };
 
   const hasLocalStorage = isLocalStorageAvailable();
-  console.log('localStorage available:', hasLocalStorage);
 
   // In-memory fallback storage
   const memoryStorage: { [key: string]: string } = {};

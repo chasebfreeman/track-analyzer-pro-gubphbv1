@@ -60,13 +60,15 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
 
         // For web, mark as loaded immediately and fetch session in background
         if (Platform.OS === 'web') {
-          console.log('SupabaseAuthContext: Web platform - non-blocking initialization');
+          console.log('SupabaseAuthContext: Web platform - immediate initialization');
+          
+          // Set loading to false immediately on web
           setIsLoading(false);
           
-          // Fetch session in background with timeout
+          // Fetch session in background with aggressive timeout
           Promise.race([
             supabase.auth.getSession(),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 2000))
+            new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 1000))
           ])
             .then((result: any) => {
               const { data: { session: initialSession }, error } = result;
@@ -79,6 +81,8 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
                 setSession(initialSession);
                 setUser(initialSession.user);
                 setIsAuthenticated(true);
+              } else {
+                console.log('SupabaseAuthContext: No initial session');
               }
             })
             .catch((error) => {
@@ -89,7 +93,7 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
           try {
             const { data: { session: initialSession }, error } = await Promise.race([
               supabase.auth.getSession(),
-              new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000))
+              new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000))
             ]) as any;
 
             if (error) {
@@ -99,6 +103,8 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
               setSession(initialSession);
               setUser(initialSession.user);
               setIsAuthenticated(true);
+            } else {
+              console.log('SupabaseAuthContext: No initial session');
             }
           } catch (error) {
             console.log('SupabaseAuthContext: Session fetch timeout or error:', error);

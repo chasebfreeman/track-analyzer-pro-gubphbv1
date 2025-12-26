@@ -4,10 +4,11 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import 'react-native-reanimated';
-import { useColorScheme, Platform } from 'react-native';
+import { useColorScheme, Platform, View, Text, ActivityIndicator } from 'react-native';
 import { SupabaseAuthProvider } from '@/contexts/SupabaseAuthContext';
+import { colors } from '@/styles/commonStyles';
 
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -17,9 +18,18 @@ export default function RootLayout() {
   const [loaded] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
+  const [initTimeout, setInitTimeout] = useState(false);
 
   useEffect(() => {
     console.log('RootLayout: Component mounted, Platform:', Platform.OS);
+    
+    // Set a timeout to force initialization after 3 seconds
+    const timeout = setTimeout(() => {
+      console.log('RootLayout: Initialization timeout reached, forcing app to load');
+      setInitTimeout(true);
+    }, 3000);
+
+    return () => clearTimeout(timeout);
   }, []);
 
   useEffect(() => {
@@ -31,9 +41,22 @@ export default function RootLayout() {
     }
   }, [loaded]);
 
-  if (!loaded) {
+  // Show loading screen with timeout
+  if (!loaded && !initTimeout) {
     console.log('RootLayout: Waiting for fonts to load');
-    return null;
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={{ marginTop: 16, fontSize: 16, color: colors.textSecondary }}>
+          Initializing app...
+        </Text>
+      </View>
+    );
+  }
+
+  // Force render even if fonts aren't loaded after timeout
+  if (initTimeout && !loaded) {
+    console.log('RootLayout: Timeout reached, rendering without custom fonts');
   }
 
   console.log('RootLayout: Rendering app');
