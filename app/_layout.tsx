@@ -50,30 +50,6 @@ export default function RootLayout() {
           <Stack.Screen name="index" />
           <Stack.Screen name="auth" />
           <Stack.Screen name="(tabs)" />
-          <Stack.Screen 
-            name="modal" 
-            options={{
-              presentation: 'modal',
-              headerShown: true,
-              title: 'Modal',
-            }}
-          />
-          <Stack.Screen 
-            name="formsheet" 
-            options={{
-              presentation: 'formSheet',
-              headerShown: true,
-              title: 'Form Sheet',
-            }}
-          />
-          <Stack.Screen 
-            name="transparent-modal" 
-            options={{
-              presentation: 'transparentModal',
-              animation: 'fade',
-              headerShown: false,
-            }}
-          />
         </Stack>
         <StatusBar style="auto" />
       </ThemeProvider>
