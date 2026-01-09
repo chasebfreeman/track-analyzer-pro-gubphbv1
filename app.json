@@ -19,8 +19,7 @@
       "bundleIdentifier": "com.anonymous.Natively",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
-      },
-      "scheme": "natively"
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -28,28 +27,18 @@
         "backgroundColor": "#000000"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.anonymous.Natively",
-      "intentFilters": [
-        {
-          "action": "android.intent.action.VIEW",
-          "data": [
-            {
-              "scheme": "natively",
-              "host": "open.expo.io"
-            }
-          ],
-          "category": [
-            "android.intent.category.DEFAULT",
-            "android.intent.category.BROWSABLE"
-          ]
-        }
-      ]
+      "package": "com.anonymous.Natively"
+    },
+    "web": {
+      "favicon": "./assets/images/final_quest_240x240.png",
+      "bundler": "metro"
     },
     "plugins": [
       "expo-font",
       "expo-router",
       "expo-web-browser"
     ],
+    "scheme": "natively",
     "experiments": {
       "typedRoutes": true
     },
