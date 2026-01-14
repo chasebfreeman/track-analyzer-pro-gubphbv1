@@ -298,23 +298,24 @@ export default function RecordScreen() {
             <Text style={styles.sectionTitle}>Select Track</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               {tracks.map((track) => (
-                <TouchableOpacity
-                  key={track.id}
-                  style={[
-                    styles.trackChip,
-                    selectedTrack?.id === track.id && styles.trackChipActive,
-                  ]}
-                  onPress={() => handleTrackSelect(track)}
-                >
-                  <Text
+                <React.Fragment key={track.id}>
+                  <TouchableOpacity
                     style={[
-                      styles.trackChipText,
-                      selectedTrack?.id === track.id && styles.trackChipTextActive,
+                      styles.trackChip,
+                      selectedTrack?.id === track.id && styles.trackChipActive,
                     ]}
+                    onPress={() => handleTrackSelect(track)}
                   >
-                    {track.name}
-                  </Text>
-                </TouchableOpacity>
+                    <Text
+                      style={[
+                        styles.trackChipText,
+                        selectedTrack?.id === track.id && styles.trackChipTextActive,
+                      ]}
+                    >
+                      {track.name}
+                    </Text>
+                  </TouchableOpacity>
+                </React.Fragment>
               ))}
             </ScrollView>
           </View>
