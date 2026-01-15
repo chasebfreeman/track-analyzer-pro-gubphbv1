@@ -94,7 +94,7 @@ export default function ReadingDetailScreen() {
       <View style={styles.laneSection}>
         <Text style={styles.laneTitle}>{title}</Text>
         
-        <View style={styles.dataGrid}>
+        <View style={styles.dataRow}>
           <View style={styles.dataItem}>
             <Text style={styles.dataLabel}>Track Temp</Text>
             <Text style={styles.dataValue}>{lane.trackTemp || 'N/A'}</Text>
@@ -104,7 +104,9 @@ export default function ReadingDetailScreen() {
             <Text style={styles.dataLabel}>UV Index</Text>
             <Text style={styles.dataValue}>{lane.uvIndex || 'N/A'}</Text>
           </View>
-          
+        </View>
+        
+        <View style={styles.dataRow}>
           <View style={styles.dataItem}>
             <Text style={styles.dataLabel}>Keg SL</Text>
             <Text style={styles.dataValue}>{lane.kegSL || 'N/A'}</Text>
@@ -114,7 +116,9 @@ export default function ReadingDetailScreen() {
             <Text style={styles.dataLabel}>Keg Out</Text>
             <Text style={styles.dataValue}>{lane.kegOut || 'N/A'}</Text>
           </View>
-          
+        </View>
+        
+        <View style={styles.dataRow}>
           <View style={styles.dataItem}>
             <Text style={styles.dataLabel}>Grippo SL</Text>
             <Text style={styles.dataValue}>{lane.grippoSL || 'N/A'}</Text>
@@ -124,10 +128,16 @@ export default function ReadingDetailScreen() {
             <Text style={styles.dataLabel}>Grippo Out</Text>
             <Text style={styles.dataValue}>{lane.grippoOut || 'N/A'}</Text>
           </View>
-          
+        </View>
+        
+        <View style={styles.dataRow}>
           <View style={styles.dataItem}>
             <Text style={styles.dataLabel}>Shine</Text>
             <Text style={styles.dataValue}>{lane.shine || 'N/A'}</Text>
+          </View>
+          
+          <View style={styles.dataItem}>
+            {/* Empty space for alignment */}
           </View>
         </View>
 
@@ -292,13 +302,14 @@ function getStyles(colors: ReturnType<typeof useThemeColors>) {
       color: colors.text,
       marginBottom: 16,
     },
-    dataGrid: {
+    dataRow: {
       flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: 16,
+      justifyContent: 'space-between',
+      marginBottom: 16,
     },
     dataItem: {
-      width: '45%',
+      flex: 1,
+      marginHorizontal: 4,
     },
     dataLabel: {
       fontSize: 12,
@@ -312,7 +323,7 @@ function getStyles(colors: ReturnType<typeof useThemeColors>) {
       fontWeight: '600',
     },
     notesSection: {
-      marginTop: 16,
+      marginTop: 8,
       paddingTop: 16,
       borderTopWidth: 1,
       borderTopColor: colors.border,
