@@ -1,7 +1,9 @@
+
 {
-  "name": "Natively",
+  "name": "track-analyzer-pro",
   "version": "1.0.0",
   "main": "index.ts",
+  "description": "Professional race track data recording and analysis app for track specialists",
   "scripts": {
     "dev": "EXPO_NO_TELEMETRY=1 expo start --lan --clear",
     "android": "EXPO_NO_TELEMETRY=1 expo start --android",
@@ -9,7 +11,13 @@
     "web": "EXPO_NO_TELEMETRY=1 expo start --web",
     "build:web": "expo export -p web && npx workbox generateSW workbox-config.js",
     "build:android": "expo prebuild -p android",
-    "lint": "eslint ."
+    "build:ios": "expo prebuild -p ios",
+    "lint": "eslint .",
+    "type-check": "tsc --noEmit",
+    "eas:build:ios": "eas build --platform ios --profile production",
+    "eas:build:android": "eas build --platform android --profile production",
+    "eas:submit:ios": "eas submit --platform ios --latest",
+    "eas:submit:android": "eas submit --platform android --latest"
   },
   "dependencies": {
     "@babel/plugin-proposal-export-namespace-from": "^7.18.9",
@@ -87,5 +95,15 @@
   "resolutions": {
     "@expo/prebuild-config": "latest"
   },
-  "private": true
+  "private": true,
+  "keywords": [
+    "race-track",
+    "track-specialist",
+    "data-recording",
+    "track-conditions",
+    "racing",
+    "motorsports"
+  ],
+  "author": "Track Analyzer Pro Team",
+  "license": "UNLICENSED"
 }

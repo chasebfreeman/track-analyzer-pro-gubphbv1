@@ -1,7 +1,8 @@
+
 {
   "expo": {
     "name": "Track Analyzer Pro",
-    "slug": "Track Analyzer Pro",
+    "slug": "track-analyzer-pro",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/natively-dark.png",
@@ -19,10 +20,13 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.Natively",
+      "bundleIdentifier": "com.trackanalyzerpro.app",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
-      }
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to upload track lane photos.",
+        "NSCameraUsageDescription": "This app needs access to your camera to take photos of track lanes."
+      },
+      "buildNumber": "1"
     },
     "android": {
       "adaptiveIcon": {
@@ -30,24 +34,42 @@
         "backgroundColor": "#000000"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.anonymous.Natively"
+      "package": "com.trackanalyzerpro.app",
+      "versionCode": 1,
+      "permissions": [
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "CAMERA"
+      ]
     },
     "web": {
       "favicon": "./assets/images/final_quest_240x240.png",
-      "bundler": "metro"
+      "bundler": "metro",
+      "output": "static"
     },
     "plugins": [
       "expo-font",
       "expo-router",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "The app needs access to your photos to upload track lane images.",
+          "cameraPermission": "The app needs access to your camera to take photos of track lanes."
+        }
+      ]
     ],
-    "scheme": "natively",
+    "scheme": "trackanalyzerpro",
     "experiments": {
       "typedRoutes": true
     },
     "extra": {
-      "router": {}
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "your-project-id-here"
+      }
     }
-  },
-  "scheme": "Track Analyzer Pro"
+  }
 }
