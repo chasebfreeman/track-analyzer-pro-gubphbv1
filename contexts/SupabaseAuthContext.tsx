@@ -27,18 +27,48 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
     console.log('SupabaseAuthProvider: Initializing auth state');
     
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('Initial session:', !!session);
-      setSession(session);
-      setUser(session?.user ?? null);
-      setIsLoading(false);
-    });
+    // Delay initialization to ensure environment is ready
+    const initializeAuth = async () => {
+      try {
+        // Get initial session
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Error getting initial session:', error);
+        } else {
+          console.log('Initial session:', !!session);
+          setSession(session);
+          setUser(session?.user ?? null);
+        }
+      } catch (error) {
+        console.error('Exception getting initial session:', error);
+      } finally {
+        setIsLoading(false);
+        setIsInitialized(true);
+      }
+    };
 
+    // Initialize after a short delay to ensure environment is ready
+    const timer = setTimeout(() => {
+      initializeAuth();
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!isInitialized) {
+      console.log('Auth not initialized yet, skipping auth state listener');
+      return;
+    }
+
+    console.log('Setting up auth state listener');
+    
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       console.log('Auth state changed:', _event, !!session);
@@ -48,9 +78,10 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
     });
 
     return () => {
+      console.log('Cleaning up auth state listener');
       subscription.unsubscribe();
     };
-  }, []);
+  }, [isInitialized]);
 
   const signInWithEmail = async (email: string, password: string) => {
     console.log('Attempting sign in with email:', email);
@@ -96,7 +127,11 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
 
   const signOut = async () => {
     console.log('User signing out');
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
   };
 
   return (

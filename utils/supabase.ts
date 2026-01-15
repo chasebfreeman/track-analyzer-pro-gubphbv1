@@ -1,6 +1,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 
 // Supabase configuration
 const SUPABASE_URL = 'https://fdgnmcaxiclsqlydftpq.supabase.co';
@@ -13,14 +14,58 @@ export const isSupabaseConfigured = () => {
   return configured;
 };
 
-// Create Supabase client with AsyncStorage for session persistence
+// Create a safe storage adapter that handles missing window object
+const createSafeStorageAdapter = () => {
+  // In-memory fallback storage
+  const memoryStorage: { [key: string]: string } = {};
+
+  return {
+    getItem: async (key: string): Promise<string | null> => {
+      try {
+        // Only use AsyncStorage on native platforms
+        if (Platform.OS !== 'web') {
+          return await AsyncStorage.getItem(key);
+        }
+        // For web, return from memory storage (will be handled by web-specific file)
+        return memoryStorage[key] || null;
+      } catch (error) {
+        console.error('Error getting item from storage:', error);
+        return memoryStorage[key] || null;
+      }
+    },
+    setItem: async (key: string, value: string): Promise<void> => {
+      try {
+        if (Platform.OS !== 'web') {
+          await AsyncStorage.setItem(key, value);
+        }
+        memoryStorage[key] = value;
+      } catch (error) {
+        console.error('Error setting item in storage:', error);
+        memoryStorage[key] = value;
+      }
+    },
+    removeItem: async (key: string): Promise<void> => {
+      try {
+        if (Platform.OS !== 'web') {
+          await AsyncStorage.removeItem(key);
+        }
+        delete memoryStorage[key];
+      } catch (error) {
+        console.error('Error removing item from storage:', error);
+        delete memoryStorage[key];
+      }
+    },
+  };
+};
+
+// Create Supabase client with safe storage adapter
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
-    storage: AsyncStorage,
+    storage: createSafeStorageAdapter(),
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,
   },
 });
 
-console.log('Supabase client initialized');
+console.log('Supabase client initialized (native)');
