@@ -339,6 +339,8 @@ function getStyles(colors: ReturnType<typeof useThemeColors>) {
     tracksListContent: {
       padding: 20,
       gap: 12,
+      // Add extra bottom padding to ensure last track is fully accessible above the tab bar
+      paddingBottom: 120,
     },
     trackCard: {
       flexDirection: 'row',

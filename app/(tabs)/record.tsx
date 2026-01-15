@@ -12,6 +12,8 @@ import {
   Platform,
   Keyboard,
   Modal,
+  InputAccessoryView,
+  Button,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useFocusEffect, useRouter, Stack } from 'expo-router';
@@ -20,6 +22,8 @@ import { IconSymbol } from '@/components/IconSymbol';
 import { Track, LaneReading } from '@/types/TrackData';
 import { SupabaseStorageService } from '@/utils/supabaseStorage';
 import * as ImagePicker from 'expo-image-picker';
+
+const INPUT_ACCESSORY_VIEW_ID = 'uniqueKeyboardAccessoryID';
 
 export default function RecordScreen() {
   const colors = useThemeColors();
@@ -178,6 +182,7 @@ export default function RecordScreen() {
               placeholder="°F"
               placeholderTextColor={colors.textSecondary}
               keyboardType="numeric"
+              inputAccessoryViewID={INPUT_ACCESSORY_VIEW_ID}
             />
           </View>
           
@@ -190,6 +195,7 @@ export default function RecordScreen() {
               placeholder="0-11"
               placeholderTextColor={colors.textSecondary}
               keyboardType="numeric"
+              inputAccessoryViewID={INPUT_ACCESSORY_VIEW_ID}
             />
           </View>
         </View>
@@ -204,6 +210,7 @@ export default function RecordScreen() {
               placeholder="Value"
               placeholderTextColor={colors.textSecondary}
               keyboardType="numeric"
+              inputAccessoryViewID={INPUT_ACCESSORY_VIEW_ID}
             />
           </View>
           
@@ -216,6 +223,7 @@ export default function RecordScreen() {
               placeholder="Value"
               placeholderTextColor={colors.textSecondary}
               keyboardType="numeric"
+              inputAccessoryViewID={INPUT_ACCESSORY_VIEW_ID}
             />
           </View>
         </View>
@@ -230,6 +238,7 @@ export default function RecordScreen() {
               placeholder="Value"
               placeholderTextColor={colors.textSecondary}
               keyboardType="numeric"
+              inputAccessoryViewID={INPUT_ACCESSORY_VIEW_ID}
             />
           </View>
           
@@ -242,6 +251,7 @@ export default function RecordScreen() {
               placeholder="Value"
               placeholderTextColor={colors.textSecondary}
               keyboardType="numeric"
+              inputAccessoryViewID={INPUT_ACCESSORY_VIEW_ID}
             />
           </View>
         </View>
@@ -254,6 +264,7 @@ export default function RecordScreen() {
             onChangeText={(text) => setLane({ ...lane, shine: text })}
             placeholder="Value"
             placeholderTextColor={colors.textSecondary}
+            inputAccessoryViewID={INPUT_ACCESSORY_VIEW_ID}
           />
         </View>
 
@@ -267,6 +278,7 @@ export default function RecordScreen() {
             placeholderTextColor={colors.textSecondary}
             multiline
             numberOfLines={3}
+            inputAccessoryViewID={INPUT_ACCESSORY_VIEW_ID}
           />
         </View>
 
@@ -351,6 +363,24 @@ export default function RecordScreen() {
             </>
           )}
         </ScrollView>
+
+        {/* Keyboard Accessory View with Done button - iOS only */}
+        {Platform.OS === 'ios' && (
+          <InputAccessoryView nativeID={INPUT_ACCESSORY_VIEW_ID}>
+            <View style={styles.keyboardAccessory}>
+              <View style={{ flex: 1 }} />
+              <TouchableOpacity
+                style={styles.doneButton}
+                onPress={() => {
+                  console.log('User tapped Done button on keyboard');
+                  Keyboard.dismiss();
+                }}
+              >
+                <Text style={styles.doneButtonText}>Done</Text>
+              </TouchableOpacity>
+            </View>
+          </InputAccessoryView>
+        )}
 
         {/* Track Dropdown Modal */}
         <Modal
@@ -603,6 +633,24 @@ function getStyles(colors: ReturnType<typeof useThemeColors>) {
       fontSize: 16,
       fontWeight: '600',
       color: '#FFFFFF',
+    },
+    keyboardAccessory: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.card,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+    },
+    doneButton: {
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+    },
+    doneButtonText: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.primary,
     },
   });
 }
