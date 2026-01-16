@@ -32,6 +32,8 @@ export default function RecordScreen() {
   
   const [tracks, setTracks] = useState<Track[]>([]);
   const [selectedTrack, setSelectedTrack] = useState<Track | null>(null);
+  const [session, setSession] = useState('');
+  const [pair, setPair] = useState('');
   const [leftLane, setLeftLane] = useState<LaneReading>(getEmptyLaneReading());
   const [rightLane, setRightLane] = useState<LaneReading>(getEmptyLaneReading());
   const [isSaving, setIsSaving] = useState(false);
@@ -105,6 +107,21 @@ export default function RecordScreen() {
     }
   };
 
+  const formatTimeTo12Hour = (date: Date): string => {
+    let hours = date.getHours();
+    const minutes = date.getMinutes();
+    const seconds = date.getSeconds();
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    
+    hours = hours % 12;
+    hours = hours ? hours : 12; // the hour '0' should be '12'
+    
+    const minutesStr = minutes < 10 ? '0' + minutes : minutes;
+    const secondsStr = seconds < 10 ? '0' + seconds : seconds;
+    
+    return `${hours}:${minutesStr}:${secondsStr} ${ampm}`;
+  };
+
   const handleSaveReading = async () => {
     console.log('User tapped Save Reading button');
     
@@ -117,12 +134,16 @@ export default function RecordScreen() {
 
     // Create new reading
     const now = new Date();
+    const time12Hour = formatTimeTo12Hour(now);
+    
     const reading = {
       trackId: selectedTrack.id,
       date: now.toISOString().split('T')[0],
-      time: now.toTimeString().split(' ')[0],
+      time: time12Hour,
       timestamp: now.getTime(),
       year: now.getFullYear(),
+      session,
+      pair,
       leftLane,
       rightLane,
     };
@@ -141,6 +162,8 @@ export default function RecordScreen() {
           onPress: () => {
             setLeftLane(getEmptyLaneReading());
             setRightLane(getEmptyLaneReading());
+            setSession('');
+            setPair('');
             Keyboard.dismiss();
           },
         },
@@ -154,6 +177,8 @@ export default function RecordScreen() {
     console.log('User tapped Cancel button');
     setLeftLane(getEmptyLaneReading());
     setRightLane(getEmptyLaneReading());
+    setSession('');
+    setPair('');
     Keyboard.dismiss();
   };
 
@@ -356,6 +381,39 @@ export default function RecordScreen() {
 
           {selectedTrack && (
             <>
+              {/* Session and Pair inputs - applies to both lanes */}
+              <View style={styles.sessionPairSection}>
+                <View style={styles.inputRow}>
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Session</Text>
+                    <TextInput
+                      style={styles.input}
+                      value={session}
+                      onChangeText={setSession}
+                      placeholder="Enter session"
+                      placeholderTextColor={colors.textSecondary}
+                      returnKeyType="done"
+                      onSubmitEditing={() => Keyboard.dismiss()}
+                      {...(Platform.OS === 'ios' && { inputAccessoryViewID: INPUT_ACCESSORY_VIEW_ID })}
+                    />
+                  </View>
+                  
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Pair</Text>
+                    <TextInput
+                      style={styles.input}
+                      value={pair}
+                      onChangeText={setPair}
+                      placeholder="Enter pair"
+                      placeholderTextColor={colors.textSecondary}
+                      returnKeyType="done"
+                      onSubmitEditing={() => Keyboard.dismiss()}
+                      {...(Platform.OS === 'ios' && { inputAccessoryViewID: INPUT_ACCESSORY_VIEW_ID })}
+                    />
+                  </View>
+                </View>
+              </View>
+
               {renderLaneInputs(leftLane, setLeftLane, 'Left Lane', 'left')}
               {renderLaneInputs(rightLane, setRightLane, 'Right Lane', 'right')}
 
@@ -556,6 +614,12 @@ function getStyles(colors: ReturnType<typeof useThemeColors>) {
     dropdownItemTextActive: {
       fontWeight: '600',
       color: colors.primary,
+    },
+    sessionPairSection: {
+      backgroundColor: colors.card,
+      borderRadius: 12,
+      padding: 16,
+      marginBottom: 16,
     },
     laneSection: {
       backgroundColor: colors.card,

@@ -231,6 +231,30 @@ export default function ReadingDetailScreen() {
             />
             <Text style={styles.infoText}>{reading.time}</Text>
           </View>
+
+          {reading.session && (
+            <View style={styles.infoRow}>
+              <IconSymbol
+                ios_icon_name="list.bullet"
+                android_material_icon_name="list"
+                size={20}
+                color={colors.primary}
+              />
+              <Text style={styles.infoText}>Session: {reading.session}</Text>
+            </View>
+          )}
+
+          {reading.pair && (
+            <View style={styles.infoRow}>
+              <IconSymbol
+                ios_icon_name="person.2"
+                android_material_icon_name="group"
+                size={20}
+                color={colors.primary}
+              />
+              <Text style={styles.infoText}>Pair: {reading.pair}</Text>
+            </View>
+          )}
         </View>
 
         {renderLaneData(reading.leftLane, 'Left Lane')}
