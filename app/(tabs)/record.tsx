@@ -184,7 +184,8 @@ export default function RecordScreen() {
               placeholderTextColor={colors.textSecondary}
               keyboardType="numeric"
               returnKeyType="done"
-              inputAccessoryViewID={INPUT_ACCESSORY_VIEW_ID}
+              onSubmitEditing={() => Keyboard.dismiss()}
+              {...(Platform.OS === 'ios' && { inputAccessoryViewID: INPUT_ACCESSORY_VIEW_ID })}
             />
           </View>
           
@@ -198,7 +199,8 @@ export default function RecordScreen() {
               placeholderTextColor={colors.textSecondary}
               keyboardType="numeric"
               returnKeyType="done"
-              inputAccessoryViewID={INPUT_ACCESSORY_VIEW_ID}
+              onSubmitEditing={() => Keyboard.dismiss()}
+              {...(Platform.OS === 'ios' && { inputAccessoryViewID: INPUT_ACCESSORY_VIEW_ID })}
             />
           </View>
         </View>
@@ -214,7 +216,8 @@ export default function RecordScreen() {
               placeholderTextColor={colors.textSecondary}
               keyboardType="numeric"
               returnKeyType="done"
-              inputAccessoryViewID={INPUT_ACCESSORY_VIEW_ID}
+              onSubmitEditing={() => Keyboard.dismiss()}
+              {...(Platform.OS === 'ios' && { inputAccessoryViewID: INPUT_ACCESSORY_VIEW_ID })}
             />
           </View>
           
@@ -228,7 +231,8 @@ export default function RecordScreen() {
               placeholderTextColor={colors.textSecondary}
               keyboardType="numeric"
               returnKeyType="done"
-              inputAccessoryViewID={INPUT_ACCESSORY_VIEW_ID}
+              onSubmitEditing={() => Keyboard.dismiss()}
+              {...(Platform.OS === 'ios' && { inputAccessoryViewID: INPUT_ACCESSORY_VIEW_ID })}
             />
           </View>
         </View>
@@ -244,7 +248,8 @@ export default function RecordScreen() {
               placeholderTextColor={colors.textSecondary}
               keyboardType="numeric"
               returnKeyType="done"
-              inputAccessoryViewID={INPUT_ACCESSORY_VIEW_ID}
+              onSubmitEditing={() => Keyboard.dismiss()}
+              {...(Platform.OS === 'ios' && { inputAccessoryViewID: INPUT_ACCESSORY_VIEW_ID })}
             />
           </View>
           
@@ -258,7 +263,8 @@ export default function RecordScreen() {
               placeholderTextColor={colors.textSecondary}
               keyboardType="numeric"
               returnKeyType="done"
-              inputAccessoryViewID={INPUT_ACCESSORY_VIEW_ID}
+              onSubmitEditing={() => Keyboard.dismiss()}
+              {...(Platform.OS === 'ios' && { inputAccessoryViewID: INPUT_ACCESSORY_VIEW_ID })}
             />
           </View>
         </View>
@@ -272,7 +278,8 @@ export default function RecordScreen() {
             placeholder="Value"
             placeholderTextColor={colors.textSecondary}
             returnKeyType="done"
-            inputAccessoryViewID={INPUT_ACCESSORY_VIEW_ID}
+            onSubmitEditing={() => Keyboard.dismiss()}
+            {...(Platform.OS === 'ios' && { inputAccessoryViewID: INPUT_ACCESSORY_VIEW_ID })}
           />
         </View>
 
@@ -287,7 +294,9 @@ export default function RecordScreen() {
             multiline
             numberOfLines={3}
             returnKeyType="done"
-            inputAccessoryViewID={INPUT_ACCESSORY_VIEW_ID}
+            blurOnSubmit={true}
+            onSubmitEditing={() => Keyboard.dismiss()}
+            {...(Platform.OS === 'ios' && { inputAccessoryViewID: INPUT_ACCESSORY_VIEW_ID })}
           />
         </View>
 
@@ -316,7 +325,7 @@ export default function RecordScreen() {
   const styles = getStyles(colors);
 
   return (
-    <>
+    <View style={{ flex: 1 }}>
       <Stack.Screen options={{ headerShown: false }} />
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
@@ -338,7 +347,7 @@ export default function RecordScreen() {
               </Text>
               <IconSymbol
                 ios_icon_name="chevron.down"
-                android_material_icon_name="arrow-downward"
+                android_material_icon_name="arrow-drop-down"
                 size={20}
                 color={colors.text}
               />
@@ -372,24 +381,6 @@ export default function RecordScreen() {
             </>
           )}
         </ScrollView>
-
-        {/* Keyboard Accessory View with Done button - iOS only */}
-        {Platform.OS === 'ios' && (
-          <InputAccessoryView nativeID={INPUT_ACCESSORY_VIEW_ID}>
-            <View style={styles.keyboardAccessory}>
-              <View style={{ flex: 1 }} />
-              <TouchableOpacity
-                style={styles.doneButton}
-                onPress={() => {
-                  console.log('User tapped Done button on keyboard');
-                  Keyboard.dismiss();
-                }}
-              >
-                <Text style={styles.doneButtonText}>Done</Text>
-              </TouchableOpacity>
-            </View>
-          </InputAccessoryView>
-        )}
 
         {/* Track Dropdown Modal */}
         <Modal
@@ -448,7 +439,25 @@ export default function RecordScreen() {
           </TouchableOpacity>
         </Modal>
       </SafeAreaView>
-    </>
+
+      {/* Keyboard Accessory View with Done button - iOS only - MUST be outside SafeAreaView */}
+      {Platform.OS === 'ios' && (
+        <InputAccessoryView nativeID={INPUT_ACCESSORY_VIEW_ID}>
+          <View style={styles.keyboardAccessory}>
+            <View style={{ flex: 1 }} />
+            <TouchableOpacity
+              style={styles.doneButton}
+              onPress={() => {
+                console.log('User tapped Done button on keyboard');
+                Keyboard.dismiss();
+              }}
+            >
+              <Text style={styles.doneButtonText}>Done</Text>
+            </TouchableOpacity>
+          </View>
+        </InputAccessoryView>
+      )}
+    </View>
   );
 }
 
@@ -652,16 +661,19 @@ function getStyles(colors: ReturnType<typeof useThemeColors>) {
       borderTopWidth: 1,
       borderTopColor: colors.border,
       paddingHorizontal: 16,
-      paddingVertical: 8,
+      paddingVertical: 12,
+      height: 50,
     },
     doneButton: {
       paddingHorizontal: 16,
       paddingVertical: 8,
+      backgroundColor: colors.primary,
+      borderRadius: 8,
     },
     doneButtonText: {
-      fontSize: 16,
+      fontSize: 17,
       fontWeight: '600',
-      color: colors.primary,
+      color: '#FFFFFF',
     },
   });
 }
