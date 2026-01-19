@@ -58,6 +58,20 @@ const getStyles = (colors: ReturnType<typeof useThemeColors>) =>
       lineHeight: 22,
       marginTop: 8,
     },
+    highlightBox: {
+      backgroundColor: colors.card,
+      padding: 16,
+      borderRadius: 12,
+      marginVertical: 12,
+      borderLeftWidth: 4,
+      borderLeftColor: colors.primary,
+    },
+    highlightText: {
+      fontSize: 15,
+      color: colors.text,
+      lineHeight: 22,
+      fontWeight: '500',
+    },
   });
 
 export default function PrivacyPolicyScreen() {
@@ -129,10 +143,24 @@ export default function PrivacyPolicyScreen() {
           <Text style={styles.bulletPoint}>• Export your data</Text>
           <Text style={styles.bulletPoint}>• Opt-out of communications</Text>
 
+          <View style={styles.highlightBox}>
+            <Text style={styles.highlightText}>
+              Account Deletion: You can delete your account at any time from the Settings screen. When you delete your account, all your data including tracks, readings, photos, and account information will be permanently deleted within 30 days. This action cannot be undone.
+            </Text>
+          </View>
+
           <Text style={styles.sectionTitle}>6. Data Retention</Text>
           <Text style={styles.paragraph}>
-            We retain your data for as long as your account is active or as needed to provide you services. If you delete your account, we will delete your personal data within 30 days, except where we are required to retain it for legal purposes.
+            We retain your data for as long as your account is active or as needed to provide you services. If you delete your account through the Settings screen, we will permanently delete your personal data within 30 days, except where we are required to retain it for legal purposes.
           </Text>
+          <Text style={styles.paragraph}>
+            The following data will be deleted when you delete your account:
+          </Text>
+          <Text style={styles.bulletPoint}>• All track records you created</Text>
+          <Text style={styles.bulletPoint}>• All readings and measurements</Text>
+          <Text style={styles.bulletPoint}>• All uploaded photos</Text>
+          <Text style={styles.bulletPoint}>• Your account credentials and profile</Text>
+          <Text style={styles.bulletPoint}>• All associated metadata</Text>
 
           <Text style={styles.sectionTitle}>7. Children's Privacy</Text>
           <Text style={styles.paragraph}>
@@ -156,7 +184,7 @@ export default function PrivacyPolicyScreen() {
 
           <Text style={styles.sectionTitle}>10. Contact Us</Text>
           <Text style={styles.paragraph}>
-            If you have any questions about this Privacy Policy or our data practices, please contact us at:
+            If you have any questions about this Privacy Policy, our data practices, or if you need assistance with account deletion, please contact us at:
           </Text>
           <Text style={styles.contactText}>support@trackanalyzerpro.com</Text>
 
