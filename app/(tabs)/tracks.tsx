@@ -113,6 +113,40 @@ export default function TracksScreen() {
     });
   };
 
+  const handleDeleteTrack = (track: Track) => {
+    console.log('User long-pressed track to delete:', track.name);
+    
+    Alert.alert(
+      'Delete Track',
+      `Are you sure you want to delete "${track.name}"? This will also delete all readings for this track. This action cannot be undone.`,
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+          onPress: () => console.log('User cancelled track deletion'),
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            console.log('User confirmed track deletion');
+            const success = await SupabaseStorageService.deleteTrack(track.id);
+            
+            if (success) {
+              console.log('Track deleted successfully');
+              await loadTracks();
+              await loadAvailableYears();
+              Alert.alert('Success', 'Track deleted successfully');
+            } else {
+              console.error('Failed to delete track');
+              Alert.alert('Error', 'Failed to delete track. Please try again.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const styles = getStyles(colors);
 
   return (
@@ -224,6 +258,8 @@ export default function TracksScreen() {
                   key={`track-${track.id}-${trackIndex}`}
                   style={styles.trackCard}
                   onPress={() => handleTrackPress(track)}
+                  onLongPress={() => handleDeleteTrack(track)}
+                  delayLongPress={500}
                 >
                   <View style={styles.trackIcon}>
                     <IconSymbol
