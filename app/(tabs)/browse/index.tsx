@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
@@ -20,7 +19,7 @@ import { SupabaseStorageService } from '@/utils/supabaseStorage';
 export default function BrowseScreen() {
   const colors = useThemeColors();
   const router = useRouter();
-  
+
   const [tracks, setTracks] = useState<Track[]>([]);
   const [selectedTrack, setSelectedTrack] = useState<Track | null>(null);
   const [availableYears, setAvailableYears] = useState<number[]>([]);
@@ -31,30 +30,37 @@ export default function BrowseScreen() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showTrackDropdown, setShowTrackDropdown] = useState(false);
 
+  // ✅ Local day key derived from timestamp (avoids stored UTC date issues)
+  const localDateKeyFromTimestamp = (ms: number) => {
+    const d = new Date(ms);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+
   const loadReadings = useCallback(async (trackId: string, year: number | null) => {
     console.log('Loading readings for track:', trackId, 'year:', year);
-    const trackReadings = await SupabaseStorageService.getReadingsForTrack(
-      trackId,
-      year || undefined
-    );
+    const trackReadings = await SupabaseStorageService.getReadingsForTrack(trackId, year || undefined);
     setReadings(trackReadings);
-    
-    // Group readings by date
+
+    // Group readings by LOCAL date derived from timestamp
     const grouped: { [date: string]: TrackReading[] } = {};
     trackReadings.forEach((reading) => {
-      if (!grouped[reading.date]) {
-        grouped[reading.date] = [];
+      const key = localDateKeyFromTimestamp(reading.timestamp);
+      if (!grouped[key]) {
+        grouped[key] = [];
       }
-      grouped[reading.date].push(reading);
+      grouped[key].push(reading);
     });
-    
+
     const dayReadings: DayReadings[] = Object.keys(grouped)
       .sort((a, b) => b.localeCompare(a))
       .map((date) => ({
         date,
         readings: grouped[date].sort((a, b) => b.timestamp - a.timestamp),
       }));
-    
+
     setGroupedReadings(dayReadings);
     console.log('Grouped readings into', dayReadings.length, 'days');
   }, []);
@@ -63,7 +69,7 @@ export default function BrowseScreen() {
     console.log('Loading tracks for browse screen');
     const allTracks = await SupabaseStorageService.getAllTracks();
     setTracks(allTracks);
-    
+
     if (allTracks.length > 0 && !selectedTrack) {
       console.log('Auto-selecting first track');
       setSelectedTrack(allTracks[0]);
@@ -74,7 +80,7 @@ export default function BrowseScreen() {
     console.log('Loading available years');
     const years = await SupabaseStorageService.getAvailableYears();
     setAvailableYears(years);
-    
+
     if (years.length > 0 && selectedYear === null) {
       console.log('Auto-selecting most recent year:', years[0]);
       setSelectedYear(years[0]);
@@ -111,11 +117,14 @@ export default function BrowseScreen() {
     setIsRefreshing(false);
   };
 
+  // ✅ Parse YYYY-MM-DD as LOCAL date
   const formatDateWithDay = (dateString: string) => {
-    const date = new Date(dateString);
+    const [y, m, d] = dateString.split('-').map(Number);
+    const date = new Date(y, m - 1, d);
+
     const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    
+
     return `${days[date.getDay()]}, ${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
   };
 
@@ -157,7 +166,6 @@ export default function BrowseScreen() {
           <Text style={styles.headerTitle}>Browse Readings</Text>
         </View>
 
-        {/* Year Filter - Horizontal Scroll */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -176,6 +184,7 @@ export default function BrowseScreen() {
               All Years
             </Text>
           </TouchableOpacity>
+
           {availableYears.map((year, yearIndex) => (
             <TouchableOpacity
               key={`year-filter-${year}-${yearIndex}`}
@@ -192,7 +201,6 @@ export default function BrowseScreen() {
           ))}
         </ScrollView>
 
-        {/* Track Dropdown */}
         <View style={styles.trackSelector}>
           <TouchableOpacity
             style={styles.dropdownButton}
@@ -217,11 +225,7 @@ export default function BrowseScreen() {
           style={styles.readingsList}
           contentContainerStyle={styles.readingsListContent}
           refreshControl={
-            <RefreshControl
-              refreshing={isRefreshing}
-              onRefresh={handleRefresh}
-              tintColor={colors.primary}
-            />
+            <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} tintColor={colors.primary} />
           }
         >
           {groupedReadings.length === 0 ? (
@@ -233,18 +237,13 @@ export default function BrowseScreen() {
                 color={colors.textSecondary}
               />
               <Text style={styles.emptyStateText}>No readings yet</Text>
-              <Text style={styles.emptyStateSubtext}>
-                Record your first reading in the Record tab
-              </Text>
+              <Text style={styles.emptyStateSubtext}>Record your first reading in the Record tab</Text>
             </View>
           ) : (
             <React.Fragment>
               {groupedReadings.map((day, dayIndex) => (
                 <View key={`day-${day.date}-${dayIndex}`} style={styles.dayGroup}>
-                  <TouchableOpacity
-                    style={styles.dayHeader}
-                    onPress={() => toggleDayExpansion(day.date)}
-                  >
+                  <TouchableOpacity style={styles.dayHeader} onPress={() => toggleDayExpansion(day.date)}>
                     <View>
                       <Text style={styles.dayDate}>{formatDateWithDay(day.date)}</Text>
                       <Text style={styles.dayCount}>{day.readings.length} reading(s)</Text>
@@ -259,7 +258,6 @@ export default function BrowseScreen() {
 
                   {expandedDays.has(day.date) && (
                     <View style={styles.expandedContent}>
-                      {/* Individual Readings */}
                       <View style={styles.readingsContainer}>
                         {day.readings.map((reading, readingIndex) => (
                           <TouchableOpacity
@@ -302,38 +300,25 @@ export default function BrowseScreen() {
           )}
         </ScrollView>
 
-        {/* Track Dropdown Modal */}
         <Modal
           visible={showTrackDropdown}
           transparent={true}
           animationType="fade"
           onRequestClose={() => setShowTrackDropdown(false)}
         >
-          <TouchableOpacity
-            style={styles.modalOverlay}
-            activeOpacity={1}
-            onPress={() => setShowTrackDropdown(false)}
-          >
+          <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowTrackDropdown(false)}>
             <View style={styles.dropdownModal}>
               <View style={styles.dropdownHeader}>
                 <Text style={styles.dropdownTitle}>Select Track</Text>
                 <TouchableOpacity onPress={() => setShowTrackDropdown(false)}>
-                  <IconSymbol
-                    ios_icon_name="xmark"
-                    android_material_icon_name="close"
-                    size={24}
-                    color={colors.text}
-                  />
+                  <IconSymbol ios_icon_name="xmark" android_material_icon_name="close" size={24} color={colors.text} />
                 </TouchableOpacity>
               </View>
               <ScrollView style={styles.dropdownList}>
                 {tracks.map((track, index) => (
                   <TouchableOpacity
                     key={`track-dropdown-${track.id}-${index}`}
-                    style={[
-                      styles.dropdownItem,
-                      selectedTrack?.id === track.id && styles.dropdownItemActive,
-                    ]}
+                    style={[styles.dropdownItem, selectedTrack?.id === track.id && styles.dropdownItemActive]}
                     onPress={() => handleTrackSelect(track)}
                   >
                     <Text
@@ -345,12 +330,7 @@ export default function BrowseScreen() {
                       {track.name}
                     </Text>
                     {selectedTrack?.id === track.id && (
-                      <IconSymbol
-                        ios_icon_name="checkmark"
-                        android_material_icon_name="check"
-                        size={20}
-                        color={colors.primary}
-                      />
+                      <IconSymbol ios_icon_name="checkmark" android_material_icon_name="check" size={20} color={colors.primary} />
                     )}
                   </TouchableOpacity>
                 ))}
@@ -365,27 +345,11 @@ export default function BrowseScreen() {
 
 function getStyles(colors: ReturnType<typeof useThemeColors>) {
   return StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: colors.background,
-    },
-    header: {
-      paddingHorizontal: 20,
-      paddingVertical: 16,
-    },
-    headerTitle: {
-      fontSize: 32,
-      fontWeight: 'bold',
-      color: colors.text,
-    },
-    yearFilter: {
-      maxHeight: 50,
-      marginBottom: 12,
-    },
-    yearFilterContent: {
-      paddingHorizontal: 20,
-      gap: 8,
-    },
+    container: { flex: 1, backgroundColor: colors.background },
+    header: { paddingHorizontal: 20, paddingVertical: 16 },
+    headerTitle: { fontSize: 32, fontWeight: 'bold', color: colors.text },
+    yearFilter: { maxHeight: 50, marginBottom: 12 },
+    yearFilterContent: { paddingHorizontal: 20, gap: 8 },
     yearChip: {
       paddingHorizontal: 16,
       paddingVertical: 8,
@@ -394,22 +358,10 @@ function getStyles(colors: ReturnType<typeof useThemeColors>) {
       borderWidth: 1,
       borderColor: colors.border,
     },
-    yearChipActive: {
-      backgroundColor: colors.primary,
-      borderColor: colors.primary,
-    },
-    yearChipText: {
-      fontSize: 14,
-      color: colors.text,
-      fontWeight: '500',
-    },
-    yearChipTextActive: {
-      color: '#FFFFFF',
-    },
-    trackSelector: {
-      paddingHorizontal: 20,
-      marginBottom: 16,
-    },
+    yearChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+    yearChipText: { fontSize: 14, color: colors.text, fontWeight: '500' },
+    yearChipTextActive: { color: '#FFFFFF' },
+    trackSelector: { paddingHorizontal: 20, marginBottom: 16 },
     dropdownButton: {
       flexDirection: 'row',
       justifyContent: 'space-between',
@@ -420,11 +372,7 @@ function getStyles(colors: ReturnType<typeof useThemeColors>) {
       borderWidth: 1,
       borderColor: colors.border,
     },
-    dropdownButtonText: {
-      fontSize: 16,
-      color: colors.text,
-      fontWeight: '500',
-    },
+    dropdownButtonText: { fontSize: 16, color: colors.text, fontWeight: '500' },
     modalOverlay: {
       flex: 1,
       backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -447,14 +395,8 @@ function getStyles(colors: ReturnType<typeof useThemeColors>) {
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
     },
-    dropdownTitle: {
-      fontSize: 20,
-      fontWeight: '600',
-      color: colors.text,
-    },
-    dropdownList: {
-      maxHeight: 400,
-    },
+    dropdownTitle: { fontSize: 20, fontWeight: '600', color: colors.text },
+    dropdownList: { maxHeight: 400 },
     dropdownItem: {
       flexDirection: 'row',
       justifyContent: 'space-between',
@@ -463,27 +405,12 @@ function getStyles(colors: ReturnType<typeof useThemeColors>) {
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
     },
-    dropdownItemActive: {
-      backgroundColor: colors.background,
-    },
-    dropdownItemText: {
-      fontSize: 16,
-      color: colors.text,
-    },
-    dropdownItemTextActive: {
-      fontWeight: '600',
-      color: colors.primary,
-    },
-    readingsList: {
-      flex: 1,
-    },
-    readingsListContent: {
-      padding: 20,
-      paddingBottom: 140,
-    },
-    dayGroup: {
-      marginBottom: 16,
-    },
+    dropdownItemActive: { backgroundColor: colors.background },
+    dropdownItemText: { fontSize: 16, color: colors.text },
+    dropdownItemTextActive: { fontWeight: '600', color: colors.primary },
+    readingsList: { flex: 1 },
+    readingsListContent: { padding: 20, paddingBottom: 140 },
+    dayGroup: { marginBottom: 16 },
     dayHeader: {
       flexDirection: 'row',
       justifyContent: 'space-between',
@@ -492,23 +419,10 @@ function getStyles(colors: ReturnType<typeof useThemeColors>) {
       borderRadius: 12,
       padding: 16,
     },
-    dayDate: {
-      fontSize: 16,
-      fontWeight: '600',
-      color: colors.text,
-    },
-    dayCount: {
-      fontSize: 14,
-      color: colors.textSecondary,
-      marginTop: 4,
-    },
-    expandedContent: {
-      marginTop: 8,
-    },
-    readingsContainer: {
-      marginTop: 8,
-      gap: 8,
-    },
+    dayDate: { fontSize: 16, fontWeight: '600', color: colors.text },
+    dayCount: { fontSize: 14, color: colors.textSecondary, marginTop: 4 },
+    expandedContent: { marginTop: 8 },
+    readingsContainer: { marginTop: 8, gap: 8 },
     readingCard: {
       backgroundColor: colors.card,
       borderRadius: 12,
@@ -516,47 +430,13 @@ function getStyles(colors: ReturnType<typeof useThemeColors>) {
       borderLeftWidth: 4,
       borderLeftColor: colors.primary,
     },
-    readingHeader: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginBottom: 8,
-    },
-    readingTime: {
-      fontSize: 16,
-      fontWeight: '600',
-      color: colors.text,
-      marginLeft: 8,
-    },
-    readingData: {
-      gap: 4,
-    },
-    readingDataText: {
-      fontSize: 14,
-      color: colors.textSecondary,
-    },
-    readingChevron: {
-      position: 'absolute',
-      right: 16,
-      top: '50%',
-      marginTop: -8,
-    },
-    emptyState: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      paddingVertical: 60,
-    },
-    emptyStateText: {
-      fontSize: 20,
-      fontWeight: '600',
-      color: colors.text,
-      marginTop: 16,
-    },
-    emptyStateSubtext: {
-      fontSize: 14,
-      color: colors.textSecondary,
-      marginTop: 8,
-      textAlign: 'center',
-    },
+    readingHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
+    readingTime: { fontSize: 16, fontWeight: '600', color: colors.text, marginLeft: 8 },
+    readingData: { gap: 4 },
+    readingDataText: { fontSize: 14, color: colors.textSecondary },
+    readingChevron: { position: 'absolute', right: 16, top: '50%', marginTop: -8 },
+    emptyState: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 60 },
+    emptyStateText: { fontSize: 20, fontWeight: '600', color: colors.text, marginTop: 16 },
+    emptyStateSubtext: { fontSize: 14, color: colors.textSecondary, marginTop: 8, textAlign: 'center' },
   });
 }
